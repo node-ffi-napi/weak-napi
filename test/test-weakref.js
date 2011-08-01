@@ -35,13 +35,18 @@ assert = require('assert');
   });
 });
 
-var obj = (function() {
-  var obj = weakref.weaken({val:42});
+(function() {
+  var obj = (function() {
+    var obj = weakref.weaken({val:42});
+    assert.equal(obj.val, 42);
+    return obj;
+  })();
+
   assert.equal(obj.val, 42);
-  return obj;
+  assert.deepEqual(obj, {val:42});
+  force_gc();
+  assert.equal(obj.val, undefined);
+  assert.deepEqual(obj, {});
 })();
 
-assert.equal(obj.val, 42);
 force_gc();
-assert.equal(obj.val, undefined);
-assert.deepEqual(obj, {});
