@@ -1,6 +1,6 @@
-{ "author": "Ben Noordhuis <info@bnoordhuis.nl>"
+{ "author": "Nathan Rajlich <nathan@tootallnate.net> (http://tootallnate.net)"
 , "contributors": [
-    "Nathan Rajlich <nathan@tootallnate.net> (http://tootallnate.net)"
+    "Ben Noordhuis <info@bnoordhuis.nl>"
   ]
 , "name": "weak"
 , "description": "Make weak references to JavaScript Objects."
