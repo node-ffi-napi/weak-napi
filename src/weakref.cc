@@ -149,6 +149,16 @@ Handle<Value> Create(const Arguments& args) {
 }
 
 
+Handle<Value> Get(const Arguments& args) {
+  HandleScope scope;
+  // TODO: Add error checking for the argument passed in
+  const bool dead = IsDead(args[0]->ToObject());
+  // xxx: Throw an Error when a dead ref is passed in???
+  if (dead) return Undefined();
+  Handle<Object> obj = Unwrap(args[0]->ToObject());
+  return scope.Close(obj);
+}
+
 void Initialize(Handle<Object> target) {
   HandleScope scope;
 
@@ -166,6 +176,7 @@ void Initialize(Handle<Object> target) {
   proxyClass->SetInternalFieldCount(1);
 
   NODE_SET_METHOD(target, "create", Create);
+  NODE_SET_METHOD(target, "get", Get);
 }
 
 } // anonymous namespace
