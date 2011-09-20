@@ -127,7 +127,7 @@ void WeakCallback(Persistent<Value> obj, void* arg) {
 }
 
 
-Handle<Value> Weaken(const Arguments& args) {
+Handle<Value> Create(const Arguments& args) {
   HandleScope scope;
 
   if (!args[0]->IsObject()) {
@@ -165,8 +165,7 @@ void Initialize(Handle<Object> target) {
                                         WeakPropertyEnumerator);
   proxyClass->SetInternalFieldCount(1);
 
-  target->Set(String::NewSymbol("weaken"),
-              FunctionTemplate::New(Weaken)->GetFunction());
+  NODE_SET_METHOD(target, "create", Create);
 }
 
 } // anonymous namespace
