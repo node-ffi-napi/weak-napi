@@ -20,7 +20,7 @@ if (typeof gc === 'undefined') {
 }
 
 force_gc = gc;
-weakref = require('../build/default/weakref');
+weakref = require('../');
 assert = require('assert');
 
 [ 0,
