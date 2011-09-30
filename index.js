@@ -9,6 +9,9 @@ try {
 
 module.exports = bindings.create
 
+// backwards-compat with node-weakref
+bindings.weaken = bindings.create
+
 Object.keys(bindings).forEach(function (name) {
   module.exports[name] = bindings[name]
 })
