@@ -26,7 +26,7 @@ Persistent<ObjectTemplate> proxyClass;
 
 
 bool IsDead(Handle<Object> proxy) {
-  assert(proxy->InternalFieldCount() == 1);
+  assert(proxy->InternalFieldCount() == 2);
   Persistent<Object>* target = reinterpret_cast<Persistent<Object>*>(
       proxy->GetPointerFromInternalField(0));
   assert(target != NULL);
