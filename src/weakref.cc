@@ -205,7 +205,7 @@ Handle<Value> IsDead(const Arguments& args) {
   assert(proxy->InternalFieldCount() == 2);
 
   const bool dead = IsDead(proxy);
-  return scope.Close(Boolean::New(dead));
+  return Boolean::New(dead);
 }
 
 Handle<Value> AddCallback(const Arguments& args) {
