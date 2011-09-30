@@ -142,63 +142,68 @@ void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
   callbacks->Set(Integer::New(callbacks->Length()), callback);
 }
 
+
 void TargetCallback(Persistent<Value> target, void* arg) {
   HandleScope scope;
-  printf("inside TargetCallback()\n");
 
   assert(target.IsNearDeath());
 
-  Persistent<Object>* proxy = reinterpret_cast<Persistent<Object>*>(arg);
+  proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
 
-  Persistent<Array>* callbacks = reinterpret_cast<Persistent<Array>*>(
-      (*proxy)->GetPointerFromInternalField(1));
 
-  if (callbacks != NULL) {
+  // invoke any listening callbacks
+  uint32_t len = cont->callbacks->Length();
+  Handle<Value> argv[1];
+  argv[0] = target;
+  for (uint32_t i=0; i<len; i++) {
 
-    uint32_t len = (*callbacks)->Length();
-    Handle<Value> argv[1];
-    argv[0] = target;
+    Handle<Function> cb = Handle<Function>::Cast(
+        cont->callbacks->Get(Integer::New(i)));
 
-    for (uint32_t i=0; i<len; i++) {
+    TryCatch try_catch;
 
-      Handle<Function> cb = Handle<Function>::Cast(
-          (*callbacks)->Get(Integer::New(i)));
+    cb->Call(target->ToObject(), 1, argv);
 
-      TryCatch try_catch;
-
-      printf("calling _doCallback(%d)\n", i);
-      cb->Call(target->ToObject(), 1, argv);
-      printf("after _doCallback()\n");
-
-      if (try_catch.HasCaught()) {
-        FatalException(try_catch);
-      }
+    if (try_catch.HasCaught()) {
+      FatalException(try_catch);
     }
-
   }
 
 
-  if (target.IsNearDeath()) {
-    printf("destroying persistent handles\n");
-    target.Dispose();
-    target.Clear();
 
-    (*proxy).Dispose();
-    (*proxy).Clear();
+  if (target.IsNearDeath()) {
+    cont->target.Dispose();
+    cont->target.Clear();
+
+    cont->proxy.Dispose();
+    cont->proxy.Clear();
   }
 }
 
 void ProxyCallback(Persistent<Value> proxy, void* arg) {
-  printf("inside ProxyCallback()\n");
   assert(proxy.IsNearDeath());
-  proxy.Dispose();
-  proxy.Clear();
 
-  Persistent<Object>* target = reinterpret_cast<Persistent<Object>*>(arg);
-  (*target).Dispose();
-  (*target).Clear();
-  delete target;
+  proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
+
+  // Clear the Persistent handle to the "proxy" object, no longer needed.
+  assert(!cont->proxy.IsEmpty());
+  cont->proxy.Dispose();
+  cont->proxy.Clear();
+  assert(cont->proxy.IsEmpty());
+
+  // If there are no callbacks, then clear the other handles as well
+  if (cont->callbacks->Length() == 0) {
+    cont->target.Dispose();
+    cont->target.Clear();
+    cont->callbacks.Dispose();
+    cont->callbacks.Clear();
+    assert(cont->proxy.IsEmpty());
+    assert(cont->target.IsEmpty());
+    assert(cont->callbacks.IsEmpty());
+    free(cont);
+  }
 }
+
 
 
 Handle<Value> Create(const Arguments& args) {
@@ -233,7 +238,7 @@ Handle<Value> Get(const Arguments& args) {
   HandleScope scope;
 
   if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 2) {
+         || args[0]->ToObject()->InternalFieldCount() != 1) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
@@ -252,7 +257,7 @@ Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
 
   if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 2) {
+         || args[0]->ToObject()->InternalFieldCount() != 1) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
@@ -267,7 +272,7 @@ Handle<Value> IsDead(const Arguments& args) {
 Handle<Value> AddCallback(const Arguments& args) {
   HandleScope scope;
   if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 2) {
+         || args[0]->ToObject()->InternalFieldCount() != 1) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
@@ -283,7 +288,7 @@ Handle<Value> AddCallback(const Arguments& args) {
 Handle<Value> Callbacks(const Arguments& args) {
   HandleScope scope;
   if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 2) {
+         || args[0]->ToObject()->InternalFieldCount() != 1) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }

@@ -42,11 +42,21 @@ assert = require('assert');
     return obj;
   })();
 
+  assert.equal(weakref.callbacks(obj).length, 0)
+  weakref.addCallback(obj, function (obj) {
+    //console.error('obj being GC\'d.')
+    assert.equal(obj.val, 42);
+    assert.deepEqual(obj, {val:42});
+  })
+  assert.equal(weakref.callbacks(obj).length, 1)
+
   assert.equal(obj.val, 42);
   assert.deepEqual(obj, {val:42});
+  assert.ok(!weakref.isDead(obj));
   force_gc();
   assert.equal(obj.val, undefined);
   assert.deepEqual(obj, {});
+  assert.ok(weakref.isDead(obj));
 })();
 
 force_gc();
