@@ -150,20 +150,31 @@ Handle<Value> Create(const Arguments& args) {
 
 Handle<Value> Get(const Arguments& args) {
   HandleScope scope;
+
   // TODO: Add error checking for the argument passed in
   const bool dead = IsDead(args[0]->ToObject());
-  // xxx: Throw an Error when a dead ref is passed in???
   if (dead) return Undefined();
+
   Handle<Object> obj = Unwrap(args[0]->ToObject());
   return scope.Close(obj);
 }
 
 Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
-  Handle<Object> obj;
+
   // TODO: Add error checking for the argument passed in
   const bool dead = IsDead(args[0]->ToObject());
   return scope.Close(Boolean::New(dead));
+}
+
+Handle<Value> AddCallback(const Arguments& args) {
+  HandleScope scope;
+  return Undefined();
+}
+
+Handle<Value> Callbacks(const Arguments& args) {
+  HandleScope scope;
+  return Undefined();
 }
 
 
@@ -181,14 +192,14 @@ void Initialize(Handle<Object> target) {
                                         WeakIndexedPropertyQuery,
                                         WeakIndexedPropertyDeleter,
                                         WeakPropertyEnumerator);
-  proxyClass->SetInternalFieldCount(1);
+  proxyClass->SetInternalFieldCount(2);
 
-  NODE_SET_METHOD(target, "create", Create);
   NODE_SET_METHOD(target, "get", Get);
+  NODE_SET_METHOD(target, "create", Create);
   NODE_SET_METHOD(target, "isDead", IsDead);
-  //NODE_SET_METHOD(target, "isWeak", IsWeak);
-  //NODE_SET_METHOD(target, "makeWeak", makeWeak);
-  //NODE_SET_METHOD(target, "clearWeak", clearWeak);
+  NODE_SET_METHOD(target, "callbacks", Callbacks);
+  NODE_SET_METHOD(target, "addCallback", AddCallback);
+
 }
 
 } // anonymous namespace
