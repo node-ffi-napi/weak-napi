@@ -36,22 +36,25 @@ garbage collected:
 ``` js
 var weak = require('weak')
 
-// we are going to "monitor" this Object an invoke "cleanup" before
-// the object is garbage collected
+// we are going to "monitor" this Object and invoke "cleanup"
+// before the object is garbage collected
 var obj = {
-  , a: true
+    a: true
   , foo: 'bar'
-  , cleanup: function () {
-      delete this.a
-      delete this.foo
-    }
+}
+
+// The function to call before Garbage Collection.
+// Note that by the time this is called, 'obj' has been set to `null`.
+function cleanup (o) {
+  delete o.a
+  delete o.foo
 }
 
 // Here's where we set up the weak reference
 weak(obj, function () {
   // `this` inside the callback is the 'obj'. DO NOT store any new references
   // to the object, and DO NOT use the object in any async functions.
-  this.cleanup()
+  cleanup(this)
 })
 
 
