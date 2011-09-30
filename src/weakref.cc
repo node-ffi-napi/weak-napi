@@ -42,6 +42,22 @@ Handle<Object> Unwrap(Handle<Object> proxy) {
   return *target;
 }
 
+Handle<Array> GetCallbacks(Handle<Object> proxy) {
+
+  Persistent<Array>* callbacks = reinterpret_cast<Persistent<Array>*>(
+      proxy->GetPointerFromInternalField(1));
+
+  // First time being called? Create a new Array
+  if (callbacks == NULL) {
+    callbacks = new Persistent<Array>();
+    *callbacks = Persistent<Array>::New(Array::New());
+    proxy->SetPointerInInternalField(1, callbacks);
+  }
+
+  assert(callbacks != NULL);
+  return *callbacks;
+}
+
 
 #define UNWRAP                            \
   HandleScope scope;                      \
@@ -114,6 +130,12 @@ Handle<Array> WeakPropertyEnumerator(const AccessorInfo& info) {
 }
 
 
+void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
+  Handle<Array> callbacks = GetCallbacks(proxy);
+  callbacks->Set(Integer::New(callbacks->Length()), callback);
+}
+
+
 template <bool delete_target>
 void WeakCallback(Persistent<Value> obj, void* arg) {
   assert(obj.IsNearDeath());
@@ -143,7 +165,12 @@ Handle<Value> Create(const Arguments& args) {
       Persistent<Object>::New(proxyClass->NewInstance());
 
   proxy->SetPointerInInternalField(0, target);
+  proxy->SetPointerInInternalField(1, NULL);
   proxy.MakeWeak(target, WeakCallback<true>);
+
+  if (args.Length() >= 2) {
+    AddCallback(proxy, Handle<Function>::Cast(args[1]));
+  }
 
   return proxy;
 }
@@ -183,12 +210,30 @@ Handle<Value> IsDead(const Arguments& args) {
 
 Handle<Value> AddCallback(const Arguments& args) {
   HandleScope scope;
+  if (!args[0]->IsObject()
+         || args[0]->ToObject()->InternalFieldCount() != 2) {
+    Local<String> message = String::New("Weakref instance expected");
+    return ThrowException(Exception::TypeError(message));
+  }
+  Local<Object> proxy = args[0]->ToObject();
+  assert(proxy->InternalFieldCount() == 2);
+
+  AddCallback(proxy, Handle<Function>::Cast(args[1]));
+
   return Undefined();
 }
 
 Handle<Value> Callbacks(const Arguments& args) {
   HandleScope scope;
-  return Undefined();
+  if (!args[0]->IsObject()
+         || args[0]->ToObject()->InternalFieldCount() != 2) {
+    Local<String> message = String::New("Weakref instance expected");
+    return ThrowException(Exception::TypeError(message));
+  }
+  Local<Object> proxy = args[0]->ToObject();
+  assert(proxy->InternalFieldCount() == 2);
+
+  return scope.Close(GetCallbacks(proxy));
 }
 
 
