@@ -18,44 +18,51 @@
 #include "node.h"
 
 using namespace v8;
+using namespace node;
 
 namespace {
+
+
+typedef struct proxy_container {
+  Persistent<Object> target;
+  Persistent<Object> proxy;
+  Persistent<Array>  callbacks;
+} proxy_container;
 
 
 Persistent<ObjectTemplate> proxyClass;
 
 
 bool IsDead(Handle<Object> proxy) {
-  assert(proxy->InternalFieldCount() == 2);
-  Persistent<Object>* target = reinterpret_cast<Persistent<Object>*>(
+  assert(proxy->InternalFieldCount() == 1);
+  proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
-  assert(target != NULL);
-  return target->IsEmpty();
+  assert(cont != NULL);
+  return cont->target.IsEmpty();
 }
 
 
 Handle<Object> Unwrap(Handle<Object> proxy) {
   assert(!IsDead(proxy));
-  Persistent<Object>* target = reinterpret_cast<Persistent<Object>*>(
+  proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
-  assert(target != NULL);
-  return *target;
+  assert(cont != NULL);
+  return cont->target;
 }
 
 Handle<Array> GetCallbacks(Handle<Object> proxy) {
 
-  Persistent<Array>* callbacks = reinterpret_cast<Persistent<Array>*>(
-      proxy->GetPointerFromInternalField(1));
+  proxy_container *cont = reinterpret_cast<proxy_container*>(
+      proxy->GetPointerFromInternalField(0));
 
   // First time being called? Create a new Array
-  if (callbacks == NULL) {
+  /*if (callbacks == NULL) {
     callbacks = new Persistent<Array>();
     *callbacks = Persistent<Array>::New(Array::New());
     proxy->SetPointerInInternalField(1, callbacks);
-  }
+  }*/
 
-  assert(callbacks != NULL);
-  return *callbacks;
+  return cont->callbacks;
 }
 
 
@@ -135,17 +142,62 @@ void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
   callbacks->Set(Integer::New(callbacks->Length()), callback);
 }
 
+void TargetCallback(Persistent<Value> target, void* arg) {
+  HandleScope scope;
+  printf("inside TargetCallback()\n");
 
-template <bool delete_target>
-void WeakCallback(Persistent<Value> obj, void* arg) {
-  assert(obj.IsNearDeath());
-  obj.Dispose();
-  obj.Clear();
+  assert(target.IsNearDeath());
+
+  Persistent<Object>* proxy = reinterpret_cast<Persistent<Object>*>(arg);
+
+  Persistent<Array>* callbacks = reinterpret_cast<Persistent<Array>*>(
+      (*proxy)->GetPointerFromInternalField(1));
+
+  if (callbacks != NULL) {
+
+    uint32_t len = (*callbacks)->Length();
+    Handle<Value> argv[1];
+    argv[0] = target;
+
+    for (uint32_t i=0; i<len; i++) {
+
+      Handle<Function> cb = Handle<Function>::Cast(
+          (*callbacks)->Get(Integer::New(i)));
+
+      TryCatch try_catch;
+
+      printf("calling _doCallback(%d)\n", i);
+      cb->Call(target->ToObject(), 1, argv);
+      printf("after _doCallback()\n");
+
+      if (try_catch.HasCaught()) {
+        FatalException(try_catch);
+      }
+    }
+
+  }
+
+
+  if (target.IsNearDeath()) {
+    printf("destroying persistent handles\n");
+    target.Dispose();
+    target.Clear();
+
+    (*proxy).Dispose();
+    (*proxy).Clear();
+  }
+}
+
+void ProxyCallback(Persistent<Value> proxy, void* arg) {
+  printf("inside ProxyCallback()\n");
+  assert(proxy.IsNearDeath());
+  proxy.Dispose();
+  proxy.Clear();
 
   Persistent<Object>* target = reinterpret_cast<Persistent<Object>*>(arg);
   (*target).Dispose();
   (*target).Clear();
-  if (delete_target) delete target;
+  delete target;
 }
 
 
@@ -157,23 +209,25 @@ Handle<Value> Create(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
 
-  Persistent<Object>* target = new Persistent<Object>();
-  *target = Persistent<Object>::New(args[0]->ToObject());
-  (*target).MakeWeak(target, WeakCallback<false>);
+  proxy_container *cont = (proxy_container *)
+    malloc(sizeof(proxy_container));
 
-  Persistent<Object> proxy =
-      Persistent<Object>::New(proxyClass->NewInstance());
+  cont->target = Persistent<Object>::New(args[0]->ToObject());
+  cont->proxy  = Persistent<Object>::New(proxyClass->NewInstance());
+  cont->callbacks = Persistent<Array>::New(Array::New());
 
-  proxy->SetPointerInInternalField(0, target);
-  proxy->SetPointerInInternalField(1, NULL);
-  proxy.MakeWeak(target, WeakCallback<true>);
+  cont->proxy->SetPointerInInternalField(0, cont);
+
+  cont->target.MakeWeak(cont, TargetCallback);
+  cont->proxy.MakeWeak(cont, ProxyCallback);
 
   if (args.Length() >= 2) {
-    AddCallback(proxy, Handle<Function>::Cast(args[1]));
+    AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
   }
 
-  return proxy;
+  return cont->proxy;
 }
+
 
 Handle<Value> Get(const Arguments& args) {
   HandleScope scope;
@@ -184,7 +238,7 @@ Handle<Value> Get(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 2);
+  assert(proxy->InternalFieldCount() == 1);
 
   const bool dead = IsDead(proxy);
   if (dead) return Undefined();
@@ -192,6 +246,7 @@ Handle<Value> Get(const Arguments& args) {
   Handle<Object> obj = Unwrap(proxy);
   return scope.Close(obj);
 }
+
 
 Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
@@ -202,11 +257,12 @@ Handle<Value> IsDead(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 2);
+  assert(proxy->InternalFieldCount() == 1);
 
   const bool dead = IsDead(proxy);
   return Boolean::New(dead);
 }
+
 
 Handle<Value> AddCallback(const Arguments& args) {
   HandleScope scope;
@@ -216,12 +272,13 @@ Handle<Value> AddCallback(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 2);
+  assert(proxy->InternalFieldCount() == 1);
 
   AddCallback(proxy, Handle<Function>::Cast(args[1]));
 
   return Undefined();
 }
+
 
 Handle<Value> Callbacks(const Arguments& args) {
   HandleScope scope;
@@ -231,7 +288,7 @@ Handle<Value> Callbacks(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 2);
+  assert(proxy->InternalFieldCount() == 1);
 
   return scope.Close(GetCallbacks(proxy));
 }
@@ -251,7 +308,7 @@ void Initialize(Handle<Object> target) {
                                         WeakIndexedPropertyQuery,
                                         WeakIndexedPropertyDeleter,
                                         WeakPropertyEnumerator);
-  proxyClass->SetInternalFieldCount(2);
+  proxyClass->SetInternalFieldCount(1);
 
   NODE_SET_METHOD(target, "get", Get);
   NODE_SET_METHOD(target, "create", Create);
