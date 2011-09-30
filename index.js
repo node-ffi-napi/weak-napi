@@ -7,4 +7,8 @@ try {
   throw e
 }}
 
-module.exports = bindings
+module.exports = bindings.create
+
+Object.keys(bindings).forEach(function (name) {
+  module.exports[name] = bindings[name]
+})
