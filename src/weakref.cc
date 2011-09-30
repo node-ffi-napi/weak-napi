@@ -151,19 +151,33 @@ Handle<Value> Create(const Arguments& args) {
 Handle<Value> Get(const Arguments& args) {
   HandleScope scope;
 
-  // TODO: Add error checking for the argument passed in
-  const bool dead = IsDead(args[0]->ToObject());
+  if (!args[0]->IsObject()
+         || args[0]->ToObject()->InternalFieldCount() != 2) {
+    Local<String> message = String::New("Weakref instance expected");
+    return ThrowException(Exception::TypeError(message));
+  }
+  Local<Object> proxy = args[0]->ToObject();
+  assert(proxy->InternalFieldCount() == 2);
+
+  const bool dead = IsDead(proxy);
   if (dead) return Undefined();
 
-  Handle<Object> obj = Unwrap(args[0]->ToObject());
+  Handle<Object> obj = Unwrap(proxy);
   return scope.Close(obj);
 }
 
 Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
 
-  // TODO: Add error checking for the argument passed in
-  const bool dead = IsDead(args[0]->ToObject());
+  if (!args[0]->IsObject()
+         || args[0]->ToObject()->InternalFieldCount() != 2) {
+    Local<String> message = String::New("Weakref instance expected");
+    return ThrowException(Exception::TypeError(message));
+  }
+  Local<Object> proxy = args[0]->ToObject();
+  assert(proxy->InternalFieldCount() == 2);
+
+  const bool dead = IsDead(proxy);
   return scope.Close(Boolean::New(dead));
 }
 
