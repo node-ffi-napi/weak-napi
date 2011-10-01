@@ -54,14 +54,7 @@ Handle<Array> GetCallbacks(Handle<Object> proxy) {
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
-
-  // First time being called? Create a new Array
-  /*if (callbacks == NULL) {
-    callbacks = new Persistent<Array>();
-    *callbacks = Persistent<Array>::New(Array::New());
-    proxy->SetPointerInInternalField(1, callbacks);
-  }*/
-
+  assert(cont != NULL);
   return cont->callbacks;
 }
 
