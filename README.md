@@ -59,7 +59,7 @@ var ref = weak(obj, function () {
 
 // While `obj` is alive, `ref` proxies everything to it, so:
 ref.a   === obj.a
-ref.foo === obj.bar
+ref.foo === obj.foo
 
 // Clear out any references to the object, so that it will be GC'd at some point...
 obj = null
