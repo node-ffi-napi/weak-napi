@@ -142,7 +142,6 @@ void TargetCallback(Persistent<Value> target, void* arg) {
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
 
-
   // invoke any listening callbacks
   uint32_t len = cont->callbacks->Length();
   Handle<Value> argv[1];
@@ -161,13 +160,9 @@ void TargetCallback(Persistent<Value> target, void* arg) {
     }
   }
 
-
-
-  if (target.IsNearDeath()) {
-    cont->target.Dispose();
-    cont->target.Clear();
-    free(cont);
-  }
+  cont->target.Dispose();
+  cont->target.Clear();
+  free(cont);
 }
 
 
