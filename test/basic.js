@@ -8,7 +8,7 @@ var obj = {
       console.log('cleaning up: %j', this)
       delete this.a
       delete this.b
-      console.log('%j', this)
+      console.log('after cleanup: %j', this)
     }
   }
 
