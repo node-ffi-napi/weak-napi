@@ -26,7 +26,6 @@ namespace {
 
 typedef struct proxy_container {
   Persistent<Object> target;
-  Persistent<Object> proxy;
   Persistent<Array>  callbacks;
 } proxy_container;
 
@@ -52,7 +51,6 @@ Handle<Object> Unwrap(Handle<Object> proxy) {
 }
 
 Handle<Array> GetCallbacks(Handle<Object> proxy) {
-
   proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
   assert(cont != NULL);
@@ -168,36 +166,9 @@ void TargetCallback(Persistent<Value> target, void* arg) {
   if (target.IsNearDeath()) {
     cont->target.Dispose();
     cont->target.Clear();
-
-    cont->proxy.Dispose();
-    cont->proxy.Clear();
-  }
-}
-
-void ProxyCallback(Persistent<Value> proxy, void* arg) {
-  assert(proxy.IsNearDeath());
-
-  proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
-
-  // Clear the Persistent handle to the "proxy" object, no longer needed.
-  assert(!cont->proxy.IsEmpty());
-  cont->proxy.Dispose();
-  cont->proxy.Clear();
-  assert(cont->proxy.IsEmpty());
-
-  // If there are no callbacks, then clear the other handles as well
-  if (cont->callbacks->Length() == 0) {
-    cont->target.Dispose();
-    cont->target.Clear();
-    cont->callbacks.Dispose();
-    cont->callbacks.Clear();
-    assert(cont->proxy.IsEmpty());
-    assert(cont->target.IsEmpty());
-    assert(cont->callbacks.IsEmpty());
     free(cont);
   }
 }
-
 
 
 Handle<Value> Create(const Arguments& args) {
@@ -212,19 +183,18 @@ Handle<Value> Create(const Arguments& args) {
     malloc(sizeof(proxy_container));
 
   cont->target = Persistent<Object>::New(args[0]->ToObject());
-  cont->proxy  = Persistent<Object>::New(proxyClass->NewInstance());
   cont->callbacks = Persistent<Array>::New(Array::New());
 
-  cont->proxy->SetPointerInInternalField(0, cont);
+  Local<Object> proxy  = proxyClass->NewInstance();
+  proxy->SetPointerInInternalField(0, cont);
 
   cont->target.MakeWeak(cont, TargetCallback);
-  cont->proxy.MakeWeak(cont, ProxyCallback);
 
   if (args.Length() >= 2) {
-    AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
+    AddCallback(proxy, Handle<Function>::Cast(args[1]));
   }
 
-  return cont->proxy;
+  return proxy;
 }
 
 
