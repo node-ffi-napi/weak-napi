@@ -22,7 +22,7 @@ Installation
 
 Install with `npm`:
 
-``` shell
+``` bash
 $ npm install weak
 ```
 
