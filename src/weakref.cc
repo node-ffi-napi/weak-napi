@@ -211,6 +211,24 @@ Handle<Value> Get(const Arguments& args) {
   return scope.Close(obj);
 }
 
+Handle<Value> IsNearDeath(const Arguments& args) {
+  HandleScope scope;
+
+  if (!args[0]->IsObject()
+         || args[0]->ToObject()->InternalFieldCount() != 1) {
+    Local<String> message = String::New("Weakref instance expected");
+    return ThrowException(Exception::TypeError(message));
+  }
+  Local<Object> proxy = args[0]->ToObject();
+
+  proxy_container *cont = reinterpret_cast<proxy_container*>(
+      proxy->GetPointerFromInternalField(0));
+  assert(cont != NULL);
+
+  Handle<Boolean> rtn = Boolean::New(cont->target.IsNearDeath());
+
+  return scope.Close(rtn);
+}
 
 Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
@@ -276,6 +294,7 @@ void Initialize(Handle<Object> target) {
 
   NODE_SET_METHOD(target, "get", Get);
   NODE_SET_METHOD(target, "create", Create);
+  NODE_SET_METHOD(target, "isNearDeath", IsNearDeath);
   NODE_SET_METHOD(target, "isDead", IsDead);
   NODE_SET_METHOD(target, "callbacks", Callbacks);
   NODE_SET_METHOD(target, "addCallback", AddCallback);
