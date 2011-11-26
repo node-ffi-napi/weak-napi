@@ -109,5 +109,5 @@ are added.
 
 Returns the internal `Array` that `ref` iterates through to invoke the GC
 callbacks. The array can be `push()`ed or `unshift()`ed onto, to have more control
-over the execution order of the callbacks. This is similar to node's
+over the execution order of the callbacks. This is similar in concept to node's
 `EventEmitter#listeners()` function.
