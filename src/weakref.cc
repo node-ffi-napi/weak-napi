@@ -239,7 +239,6 @@ Handle<Value> IsDead(const Arguments& args) {
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 1);
 
   const bool dead = IsDead(proxy);
   return Boolean::New(dead);
