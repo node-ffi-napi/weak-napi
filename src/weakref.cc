@@ -25,6 +25,7 @@ namespace {
 
 
 typedef struct proxy_container {
+  Persistent<Object> proxy;
   Persistent<Object> target;
   Persistent<Array>  callbacks;
 } proxy_container;
@@ -37,8 +38,7 @@ bool IsDead(Handle<Object> proxy) {
   assert(proxy->InternalFieldCount() == 1);
   proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
-  assert(cont != NULL);
-  return cont->target.IsEmpty();
+  return cont == NULL || cont->target.IsEmpty();
 }
 
 
@@ -46,7 +46,6 @@ Handle<Object> Unwrap(Handle<Object> proxy) {
   assert(!IsDead(proxy));
   proxy_container *cont = reinterpret_cast<proxy_container*>(
       proxy->GetPointerFromInternalField(0));
-  assert(cont != NULL);
   return cont->target;
 }
 
@@ -160,8 +159,13 @@ void TargetCallback(Persistent<Value> target, void* arg) {
     }
   }
 
+  cont->proxy->SetPointerInInternalField(0, NULL);
+  cont->proxy.Dispose();
+  cont->proxy.Clear();
   cont->target.Dispose();
   cont->target.Clear();
+  cont->callbacks.Dispose();
+  cont->callbacks.Clear();
   free(cont);
 }
 
@@ -180,16 +184,16 @@ Handle<Value> Create(const Arguments& args) {
   cont->target = Persistent<Object>::New(args[0]->ToObject());
   cont->callbacks = Persistent<Array>::New(Array::New());
 
-  Local<Object> proxy  = proxyClass->NewInstance();
-  proxy->SetPointerInInternalField(0, cont);
+  cont->proxy = Persistent<Object>::New(proxyClass->NewInstance());
+  cont->proxy->SetPointerInInternalField(0, cont);
 
   cont->target.MakeWeak(cont, TargetCallback);
 
   if (args.Length() >= 2) {
-    AddCallback(proxy, Handle<Function>::Cast(args[1]));
+    AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
   }
 
-  return proxy;
+  return cont->proxy;
 }
 
 
