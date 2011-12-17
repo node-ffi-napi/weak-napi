@@ -1,7 +1,7 @@
 var bindings
 
 try {
-  bindings = require('./build/'+process.platform+'/'+process.arch+'/weakref')
+  bindings = require('./compiled/'+process.platform+'/'+process.arch+'/weakref')
 } catch (e) { try {
   bindings = require('./build/Release/weakref')
 } catch (e) { try {
