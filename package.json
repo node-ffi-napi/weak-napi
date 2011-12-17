@@ -12,7 +12,7 @@
     }
 , "main": "./index.js"
 , "scripts": {
-      "preinstall": "node-waf clean || true; node-waf configure build"
+      "preinstall": "node build.js"
     , "test": "for i in test/*.js; do node --expose-gc \"$i\"; done;"
     }
 , "engines": {
