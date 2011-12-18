@@ -75,6 +75,7 @@ describe('Weakref', function () {
     r.should.have.property('foo', 'bar')
     gc()
     r.should.not.have.property('foo')
+    Object.keys(r).should.equal(0)
   })
 
 })
