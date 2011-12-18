@@ -228,8 +228,7 @@ Handle<Value> Get(const Arguments& args) {
 Handle<Value> IsNearDeath(const Arguments& args) {
   HandleScope scope;
 
-  if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 1) {
+  if (!isWeakRef(args[0])) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
@@ -247,8 +246,7 @@ Handle<Value> IsNearDeath(const Arguments& args) {
 Handle<Value> IsDead(const Arguments& args) {
   HandleScope scope;
 
-  if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 1) {
+  if (!isWeakRef(args[0])) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
@@ -261,13 +259,12 @@ Handle<Value> IsDead(const Arguments& args) {
 
 Handle<Value> AddCallback(const Arguments& args) {
   HandleScope scope;
-  if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 1) {
+
+  if (!isWeakRef(args[0])) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 1);
 
   AddCallback(proxy, Handle<Function>::Cast(args[1]));
 
@@ -276,13 +273,12 @@ Handle<Value> AddCallback(const Arguments& args) {
 
 Handle<Value> Callbacks(const Arguments& args) {
   HandleScope scope;
-  if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 1) {
+
+  if (!isWeakRef(args[0])) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 1);
 
   return scope.Close(GetCallbacks(proxy));
 }
