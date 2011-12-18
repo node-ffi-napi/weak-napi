@@ -18,6 +18,11 @@
 , "engines": {
       "node": "*"
     }
-, "dependencies": {}
-, "devDependencies": {}
+, "dependencies": {
+      "debug": "*"
+  }
+, "devDependencies": {
+      "mocha": "*"
+    , "should": "*"
+  }
 }
