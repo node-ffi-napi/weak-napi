@@ -13,16 +13,14 @@ describe('Weakref', function () {
   it('should proxy named gets to the target', function () {
     var o = { foo: 'bar' }
       , r = weak(o)
-    r.should.have.property('foo')
-    r.foo.should.equal.bar
+    r.should.have.property('foo', 'bar')
   })
 
   it('should proxy named sets to the target', function () {
     var o = {}
       , r = weak(o)
     r.foo = 'bar'
-    o.should.have.property('foo')
-    r.foo.should.equal('bar')
+    o.should.have.property('foo', 'bar')
   })
 
   it('should proxy named deletes ot the target', function () {
