@@ -196,17 +196,27 @@ Handle<Value> Create(const Arguments& args) {
   return cont->proxy;
 }
 
+/**
+ * TODO: Make this better.
+ */
+
+bool isWeakRef (Handle<Value> val) {
+  return val->IsObject() && val->ToObject()->InternalFieldCount() == 1;
+}
+
+Handle<Value> IsWeakRef (const Arguments& args) {
+  HandleScope scope;
+  return Boolean::New(isWeakRef(args[0]));
+}
 
 Handle<Value> Get(const Arguments& args) {
   HandleScope scope;
 
-  if (!args[0]->IsObject()
-         || args[0]->ToObject()->InternalFieldCount() != 1) {
+  if (!isWeakRef(args[0])) {
     Local<String> message = String::New("Weakref instance expected");
     return ThrowException(Exception::TypeError(message));
   }
   Local<Object> proxy = args[0]->ToObject();
-  assert(proxy->InternalFieldCount() == 1);
 
   const bool dead = IsDead(proxy);
   if (dead) return Undefined();
@@ -264,7 +274,6 @@ Handle<Value> AddCallback(const Arguments& args) {
   return Undefined();
 }
 
-
 Handle<Value> Callbacks(const Arguments& args) {
   HandleScope scope;
   if (!args[0]->IsObject()
@@ -297,6 +306,7 @@ void Initialize(Handle<Object> target) {
 
   NODE_SET_METHOD(target, "get", Get);
   NODE_SET_METHOD(target, "create", Create);
+  NODE_SET_METHOD(target, "isWeakRef", IsWeakRef);
   NODE_SET_METHOD(target, "isNearDeath", IsNearDeath);
   NODE_SET_METHOD(target, "isDead", IsDead);
   NODE_SET_METHOD(target, "callbacks", Callbacks);
