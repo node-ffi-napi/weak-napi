@@ -1,19 +1,24 @@
+require('should')
 var weak = require('../')
-  , assert = require('assert')
 
-var b = Buffer('test')
-weak(b, callback)
+describe('weak()', function () {
 
-var gotCb = false
-function callback () {
-  gotCb = true
-  console.log(String(this))
-}
+  describe('Buffer', function () {
 
-b = null
-gc()
+    beforeEach(gc)
 
+    it('should invoke callback before destroying Buffer', function () {
 
-process.on('exit', function () {
-  assert.ok(gotCb)
+      var called = false
+      weak(Buffer('test'), function (buf) {
+        called = true
+        buf.toString().should.equal('test')
+      })
+
+      called.should.be.false
+      gc()
+      called.should.be.true
+    })
+
+  })
 })

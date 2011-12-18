@@ -21,7 +21,8 @@ describe('exports', function () {
   checkFunction('callbacks')
   checkFunction('addCallback')
 
-  // legacy
-  checkFunction('weaken')
+  it('should be a circular reference to "create"', function () {
+    weak.should.equal(weak.create)
+  })
 
 })
