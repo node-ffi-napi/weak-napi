@@ -23,7 +23,7 @@ describe('Weakref', function () {
     o.should.have.property('foo', 'bar')
   })
 
-  it('should proxy named deletes ot the target', function () {
+  it('should proxy named deletes to the target', function () {
     var o = { foo: 'bar' }
      ,  r = weak(o)
     delete r.foo
