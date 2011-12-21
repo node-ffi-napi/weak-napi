@@ -6,10 +6,6 @@
     {
       'sources': [
         'src/weakref.cc',
-      ],
-      'include_dirs': [
-      ],
-      'defines': [
       ]
     }
   ]
