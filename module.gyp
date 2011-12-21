@@ -1,12 +1,8 @@
 {
-  'variables': {
-    'module_name': 'weakref',
-  },
   'targets': [
     {
-      'sources': [
-        'src/weakref.cc',
-      ]
+      'target_name': 'weakref',
+      'sources': [ 'src/weakref.cc' ]
     }
   ]
 }
