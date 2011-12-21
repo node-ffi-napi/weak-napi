@@ -10,9 +10,6 @@
       'include_dirs': [
       ],
       'defines': [
-      ],
-      'includes': [
-        'node_module.gypi',
       ]
     }
   ]
