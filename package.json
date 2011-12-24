@@ -13,13 +13,13 @@
 , "main": "./lib/weak.js"
 , "scripts": {
       "preinstall": "node build.js"
-    , "test": "node --expose-gc ./node_modules/mocha/bin/mocha --reporter spec"
+    , "test": "node --expose-gc ./node_modules/mocha/bin/_mocha --reporter spec"
     }
 , "engines": {
       "node": "*"
     }
 , "devDependencies": {
-      "mocha": "*"
+      "mocha": "> 0.7.0"
     , "should": "*"
   }
 }
