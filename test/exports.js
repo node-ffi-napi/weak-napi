@@ -10,6 +10,8 @@ function checkFunction (prop) {
 
 describe('exports', function () {
 
+  afterEach(gc)
+
   it('should be a function', function () {
     weak.should.be.a('function')
   })

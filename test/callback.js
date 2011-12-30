@@ -2,9 +2,10 @@ require('should')
 var weak = require('../')
 
 describe('weak()', function () {
-  describe('garbage collection callback', function () {
 
-    beforeEach(gc)
+  afterEach(gc)
+
+  describe('garbage collection callback', function () {
 
     it('should accept a function as second argument', function () {
       var r = weak({}, function () {})

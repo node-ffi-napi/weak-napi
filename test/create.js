@@ -3,7 +3,7 @@ var should = require('should')
 
 describe('create()', function () {
 
-  beforeEach(gc)
+  afterEach(gc)
 
   it('should throw on non-"object" values', function () {
     [ 0

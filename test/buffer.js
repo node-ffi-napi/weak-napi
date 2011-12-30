@@ -3,9 +3,9 @@ var weak = require('../')
 
 describe('weak()', function () {
 
-  describe('Buffer', function () {
+  afterEach(gc)
 
-    beforeEach(gc)
+  describe('Buffer', function () {
 
     it('should invoke callback before destroying Buffer', function () {
 

@@ -3,7 +3,7 @@ var weak = require('../')
 
 describe('Weakref', function () {
 
-  beforeEach(gc)
+  afterEach(gc)
 
   it('weak() should return a `Weakref` instance', function () {
     var ref = weak({})
