@@ -9,15 +9,15 @@
 , "repository": {
       "type": "git"
     , "url": "git://github.com/TooTallNate/node-weak.git"
-    }
+  }
 , "main": "./lib/weak.js"
 , "scripts": {
       "preinstall": "node build.js"
     , "test": "node --expose-gc ./node_modules/mocha/bin/_mocha --reporter spec"
-    }
+  }
 , "engines": {
       "node": "*"
-    }
+  }
 , "devDependencies": {
       "mocha": "> 0.7.0"
     , "should": "*"
