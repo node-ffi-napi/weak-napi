@@ -10,6 +10,8 @@ if (process.platform == 'win32') {
   process.exit(0)
 }
 
+console.error(process.platform, process.arch)
+
 var spawn = require('child_process').spawn
   , command = 'node-waf clean || true; node-waf configure build'
   , build = spawn('/bin/sh', ['-c', command], { customFds: [0,1,2] })
