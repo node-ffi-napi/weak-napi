@@ -4,4 +4,4 @@ out
 Makefile
 gyp-mac-tool
 weakref.target.mk
-module.Makefile
+bindings.Makefile
