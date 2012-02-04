@@ -12,8 +12,7 @@
   }
 , "main": "./lib/weak.js"
 , "scripts": {
-      "preinstall": "node build.js"
-    , "test": "node --expose-gc ./node_modules/mocha/bin/_mocha --reporter spec"
+      "test": "node --expose-gc ./node_modules/mocha/bin/_mocha --reporter spec"
   }
 , "engines": {
       "node": "*"
