@@ -17,6 +17,9 @@
 , "engines": {
       "node": "*"
   }
+, "dependencies": {
+      "bindings": "*"
+  }
 , "devDependencies": {
       "mocha": "> 0.7.0"
     , "should": "*"
