@@ -1,7 +1,7 @@
 .lock-wscript
 node_modules
 out
-Makefile
+Makefile.gyp
 gyp-mac-tool
-weakref.target.mk
+weakref.target.gyp.mk
 bindings.Makefile
