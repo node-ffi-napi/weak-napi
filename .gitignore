@@ -1,11 +1,2 @@
-.lock-wscript
-node_modules
-out
-Release
-Debug
-Makefile.gyp
-gyp-mac-tool
-weakref.target.gyp.mk
-bindings.Makefile
-*.sln
-*.vcxproj*
+/node_modules
+/build
