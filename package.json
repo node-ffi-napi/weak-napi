@@ -12,7 +12,7 @@
   }
 , "main": "./lib/weak.js"
 , "scripts": {
-      "test": "node --expose-gc ./node_modules/mocha/bin/_mocha --reporter spec"
+      "test": "mocha -gc --reporter spec"
   }
 , "engines": {
       "node": "*"
