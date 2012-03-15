@@ -15,8 +15,8 @@
  */
 
 #include <stdlib.h>
-#include <v8.h>
-#include <node.h>
+#include "v8.h"
+#include "node.h"
 
 using namespace v8;
 using namespace node;
