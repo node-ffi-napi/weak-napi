@@ -74,6 +74,38 @@ typeof ref.foo === 'undefined'
 ```
 
 
+Weak Callback Function "Best Practices"
+---------------------------------------
+
+It's important to be careful when using the "callbacks" feature of `node-weak`,
+otherwise you can end up in a situation where the watched object will never
+be garbage collected.
+
+You _should **not**_ define the callback function in the same scope as the
+object that is being watched. It's often best to define the callback function
+at the highest scope possible (top-level being the best). Named function work
+really well for this:
+
+``` js
+var http = require('http')
+  , weak = require('weak')
+
+http.createServer(function (req, res) {
+  weak(req, gcReq)
+  weak(res, gcRes)
+  res.end('Hello World\n')
+}).listen(3000)
+
+function gcReq () {
+  console.log('GC\'d `req` object')
+}
+
+function gcRes () {
+  console.log('GC\'d `res` object')
+}
+```
+
+
 API
 ---
 
