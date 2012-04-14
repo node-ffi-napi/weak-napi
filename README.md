@@ -83,8 +83,8 @@ be garbage collected.
 
 You _should **not**_ define the callback function in the same scope as the
 object that is being watched. It's often best to define the callback function
-at the highest scope possible (top-level being the best). Named function work
-really well for this:
+at the highest scope possible (top-level being the best). Named functions
+work really well for this:
 
 ``` js
 var http = require('http')
