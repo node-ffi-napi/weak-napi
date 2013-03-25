@@ -17,6 +17,7 @@
 #include <stdlib.h>
 #include "v8.h"
 #include "node.h"
+#include "node_version.h"
 
 using namespace v8;
 using namespace node;
@@ -37,7 +38,11 @@ Persistent<ObjectTemplate> proxyClass;
 bool IsDead(Handle<Object> proxy) {
   assert(proxy->InternalFieldCount() == 1);
   proxy_container *cont = reinterpret_cast<proxy_container*>(
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
       proxy->GetAlignedPointerFromInternalField(0));
+#else
+      proxy->GetPointerFromInternalField(0));
+#endif
   return cont == NULL || cont->target.IsEmpty();
 }
 
@@ -45,13 +50,21 @@ bool IsDead(Handle<Object> proxy) {
 Handle<Object> Unwrap(Handle<Object> proxy) {
   assert(!IsDead(proxy));
   proxy_container *cont = reinterpret_cast<proxy_container*>(
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
       proxy->GetAlignedPointerFromInternalField(0));
+#else
+      proxy->GetPointerFromInternalField(0));
+#endif
   return cont->target;
 }
 
 Handle<Array> GetCallbacks(Handle<Object> proxy) {
   proxy_container *cont = reinterpret_cast<proxy_container*>(
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
       proxy->GetAlignedPointerFromInternalField(0));
+#else
+      proxy->GetPointerFromInternalField(0));
+#endif
   assert(cont != NULL);
   return cont->callbacks;
 }
@@ -159,7 +172,11 @@ void TargetCallback(Persistent<Value> target, void* arg) {
     }
   }
 
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
   cont->proxy->SetAlignedPointerInInternalField(0, NULL);
+#else
+  cont->proxy->SetPointerInInternalField(0, NULL);
+#endif
   cont->proxy.Dispose();
   cont->proxy.Clear();
   cont->target.Dispose();
@@ -185,7 +202,11 @@ Handle<Value> Create(const Arguments& args) {
   cont->callbacks = Persistent<Array>::New(Array::New());
 
   cont->proxy = Persistent<Object>::New(proxyClass->NewInstance());
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
   cont->proxy->SetAlignedPointerInInternalField(0, cont);
+#else
+  cont->proxy->SetPointerInInternalField(0, cont);
+#endif
 
   cont->target.MakeWeak(cont, TargetCallback);
 
@@ -235,7 +256,11 @@ Handle<Value> IsNearDeath(const Arguments& args) {
   Local<Object> proxy = args[0]->ToObject();
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(
+#if NODE_VERSION_AT_LEAST(0, 11, 0)
       proxy->GetAlignedPointerFromInternalField(0));
+#else
+      proxy->GetPointerFromInternalField(0));
+#endif
   assert(cont != NULL);
 
   Handle<Boolean> rtn = Boolean::New(cont->target.IsNearDeath());
