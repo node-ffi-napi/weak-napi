@@ -30,6 +30,6 @@
     "bindings": "*"
   },
   "devDependencies": {
-    "mocha": "> 0.7.0"
+    "mocha": "~1.14.0"
   }
 }
