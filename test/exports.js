@@ -1,10 +1,9 @@
-require('should')
+var assert = require('assert');
 var weak = require('../')
 
 function checkFunction (prop) {
   it('should have a function "' + prop + '"', function () {
-    weak.should.have.property(prop)
-    weak[prop].should.be.a('function')
+    assert('function' == typeof weak[prop]);
   })
 }
 
@@ -13,7 +12,7 @@ describe('exports', function () {
   afterEach(gc)
 
   it('should be a function', function () {
-    weak.should.be.a('function')
+    assert('function' == typeof weak);
   })
 
   checkFunction('get')
@@ -25,7 +24,7 @@ describe('exports', function () {
   checkFunction('addCallback')
 
   it('should be a circular reference to "create"', function () {
-    weak.should.equal(weak.create)
+    assert(weak === weak.create);
   })
 
 })
