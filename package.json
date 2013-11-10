@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "bindings": "*",
-    "nan": "https://github.com/TooTallNate/nan/archive/add%2FNAN_INDEX_macros.tar.gz"
+    "nan": "https://github.com/rvagg/nan/archive/0.5.0-wip.tar.gz"
   },
   "devDependencies": {
     "mocha": "~1.14.0"
