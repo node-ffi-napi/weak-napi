@@ -92,37 +92,32 @@ NAN_PROPERTY_DELETER(WeakNamedPropertyDeleter) {
 }
 
 
-Handle<Value> WeakIndexedPropertyGetter(uint32_t index,
-                                        const AccessorInfo& args) {
+NAN_INDEX_GETTER(WeakIndexedPropertyGetter) {
   UNWRAP
   NanReturnValue(dead ? Local<Value>() : obj->Get(index));
 }
 
 
-Handle<Value> WeakIndexedPropertySetter(uint32_t index,
-                                        Local<Value> value,
-                                        const AccessorInfo& args) {
+NAN_INDEX_SETTER(WeakIndexedPropertySetter) {
   UNWRAP
   if (!dead) obj->Set(index, value);
   NanReturnValue(value);
 }
 
 
-Handle<Integer> WeakIndexedPropertyQuery(uint32_t index,
-                                         const AccessorInfo& args) {
+NAN_INDEX_QUERY(WeakIndexedPropertyQuery) {
   NanScope();
   NanReturnValue(Integer::New(None));
 }
 
 
-Handle<Boolean> WeakIndexedPropertyDeleter(uint32_t index,
-                                           const AccessorInfo& args) {
+NAN_INDEX_DELETER(WeakIndexedPropertyDeleter) {
   UNWRAP
   NanReturnValue(Boolean::New(!dead && obj->Delete(index)));
 }
 
 
-Handle<Array> WeakPropertyEnumerator(const AccessorInfo& args) {
+NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
   UNWRAP
   NanReturnValue(dead ? Array::New(0) : obj->GetPropertyNames());
 }
@@ -136,24 +131,29 @@ void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
 
 NAN_WEAK_CALLBACK(void*, TargetCallback) {
   NanScope();
+
+  // XXX: node > 0.11.3 gets a Object here, < gets a Value :(
   Persistent<Value> target = NAN_WEAK_CALLBACK_OBJECT;
+
   assert(target.IsNearDeath());
   void* arg = NAN_WEAK_CALLBACK_DATA(void *);
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
 
   // invoke any listening callbacks
-  uint32_t len = cont->callbacks->Length();
-  Handle<Value> argv[1];
-  argv[0] = target;
+  uint32_t len = NanPersistentToLocal(cont->callbacks)->Length();
+  Handle<Value> callbackArgs[] = {
+    NanPersistentToLocal(target)
+  };
+
   for (uint32_t i=0; i<len; i++) {
 
     Handle<Function> cb = Handle<Function>::Cast(
-        cont->callbacks->Get(Integer::New(i)));
+        NanPersistentToLocal(cont->callbacks)->Get(Integer::New(i)));
 
     TryCatch try_catch;
 
-    cb->Call(target->ToObject(), 1, argv);
+    cb->Call(NanPersistentToLocal(target)->ToObject(), 1, callbackArgs);
 
     if (try_catch.HasCaught()) {
       FatalException(try_catch);
@@ -161,7 +161,7 @@ NAN_WEAK_CALLBACK(void*, TargetCallback) {
   }
 
   // clean everything up
-  NanSetInternalFieldPointer(cont-> proxy, 0, NULL);
+  NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, NULL);
   NanDispose(cont->proxy);
   NanDispose(cont->target);
   NanDispose(cont->callbacks);
@@ -181,13 +181,13 @@ NAN_METHOD(Create) {
 
   NanAssignPersistent(Object, cont->target, args[0]->ToObject());
   NanAssignPersistent(Array, cont->callbacks, Array::New());
-  NanAssignPersistent(Object, cont->proxy, proxyClass->NewInstance());
-  NanSetInternalFieldPointer(cont->proxy, 0, cont);
+  NanAssignPersistent(Object, cont->proxy, NanPersistentToLocal(proxyClass)->NewInstance());
+  NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, cont);
 
-  NanMakeWeak(cont->target, cont, TargetCallback);
+  NanMakeWeak(cont->target, reinterpret_cast<void *>(cont), TargetCallback);
 
   if (args.Length() >= 2) {
-    AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
+    AddCallback(NanPersistentToLocal(cont->proxy), Handle<Function>::Cast(args[1]));
   }
 
   NanReturnValue(cont->proxy);
@@ -280,18 +280,19 @@ NAN_METHOD(Callbacks) {
 void Initialize(Handle<Object> exports) {
   NanScope();
 
-  proxyClass = Persistent<ObjectTemplate>::New(ObjectTemplate::New());
-  proxyClass->SetNamedPropertyHandler(WeakNamedPropertyGetter,
-                                      WeakNamedPropertySetter,
-                                      WeakNamedPropertyQuery,
-                                      WeakNamedPropertyDeleter,
-                                      WeakPropertyEnumerator);
-  proxyClass->SetIndexedPropertyHandler(WeakIndexedPropertyGetter,
-                                        WeakIndexedPropertySetter,
-                                        WeakIndexedPropertyQuery,
-                                        WeakIndexedPropertyDeleter,
-                                        WeakPropertyEnumerator);
-  proxyClass->SetInternalFieldCount(1);
+  Handle<ObjectTemplate> p = ObjectTemplate::New();
+  NanAssignPersistent(ObjectTemplate, proxyClass, p);
+  p->SetNamedPropertyHandler(WeakNamedPropertyGetter,
+                             WeakNamedPropertySetter,
+                             WeakNamedPropertyQuery,
+                             WeakNamedPropertyDeleter,
+                             WeakPropertyEnumerator);
+  p->SetIndexedPropertyHandler(WeakIndexedPropertyGetter,
+                               WeakIndexedPropertySetter,
+                               WeakIndexedPropertyQuery,
+                               WeakIndexedPropertyDeleter,
+                               WeakPropertyEnumerator);
+  p->SetInternalFieldCount(1);
 
   NODE_SET_METHOD(exports, "get", Get);
   NODE_SET_METHOD(exports, "create", Create);
