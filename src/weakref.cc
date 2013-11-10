@@ -132,10 +132,7 @@ void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
 NAN_WEAK_CALLBACK(void*, TargetCallback) {
   NanScope();
 
-  // XXX: node > 0.11.3 gets a Object here, < gets a Value :(
-  Persistent<Value> target = NAN_WEAK_CALLBACK_OBJECT;
-
-  assert(target.IsNearDeath());
+  assert(NAN_WEAK_CALLBACK_OBJECT.IsNearDeath());
   void* arg = NAN_WEAK_CALLBACK_DATA(void *);
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
@@ -143,7 +140,7 @@ NAN_WEAK_CALLBACK(void*, TargetCallback) {
   // invoke any listening callbacks
   uint32_t len = NanPersistentToLocal(cont->callbacks)->Length();
   Handle<Value> callbackArgs[] = {
-    NanPersistentToLocal(target)
+    NanPersistentToLocal(NAN_WEAK_CALLBACK_OBJECT)
   };
 
   for (uint32_t i=0; i<len; i++) {
@@ -153,7 +150,7 @@ NAN_WEAK_CALLBACK(void*, TargetCallback) {
 
     TryCatch try_catch;
 
-    cb->Call(NanPersistentToLocal(target)->ToObject(), 1, callbackArgs);
+    cb->Call(NanPersistentToLocal(NAN_WEAK_CALLBACK_OBJECT)->ToObject(), 1, callbackArgs);
 
     if (try_catch.HasCaught()) {
       FatalException(try_catch);
