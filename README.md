@@ -109,7 +109,7 @@ function gcRes () {
 API
 ---
 
-### weakref weak(Object obj [, Function callback])
+### Weakref weak(Object obj [, Function callback])
 
 The main exports is the function that creates the weak reference.
 The first argument is the Object that should be monitored.
@@ -119,10 +119,22 @@ Optionally, you can set a callback function to be invoked
 before the object is garbage collected.
 
 
-### Object weak.get(weakref ref)
+### Object weak.get(Weakref ref)
 
 `get()` returns the actual reference to the Object that this weak reference was
 created with. If this is called with a dead reference, `undefined` is returned.
+
+
+### Boolean weak.isDead(Weakref ref)
+
+Checks to see if `ref` is a dead reference. Returns `true` if the original Object
+has already been GC'd, `false` otherwise.
+
+
+### Boolean weak.isNearDeath(Weakref ref)
+
+Checks to see if `ref` is "near death". This will be `true` exactly during the
+weak reference callback function, and `false` any other time.
 
 
 ### Boolean weak.isWeakRef(Object obj)
@@ -131,20 +143,14 @@ Checks to see if `obj` is "weak reference" instance. Returns `true` if the
 passed in object is a "weak reference", `false` otherwise.
 
 
-### Boolean weak.isDead(weakref ref)
-
-Checks to see if `ref` is a dead reference. Returns `true` if the original Object
-has already been GC'd, `false` otherwise.
-
-
-### null weak.addCallback(weakref ref, Function callback)
+### undefined weak.addCallback(Weakref ref, Function callback)
 
 Adds `callback` to the Array of callback functions that will be invoked before the
 Objects gets garbage collected. The callbacks get executed in the order that they
 are added.
 
 
-### Array weak.callbacks(weakref ref)
+### Array weak.callbacks(Weakref ref)
 
 Returns the internal `Array` that `ref` iterates through to invoke the GC
 callbacks. The array can be `push()`ed or `unshift()`ed onto, to have more control
