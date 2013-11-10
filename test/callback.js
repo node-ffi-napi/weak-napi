@@ -1,4 +1,4 @@
-require('should')
+var assert = require('assert')
 var weak = require('../')
 
 describe('weak()', function () {
@@ -9,7 +9,7 @@ describe('weak()', function () {
 
     it('should accept a function as second argument', function () {
       var r = weak({}, function () {})
-      weak.callbacks(r).should.have.lengthOf(1)
+      assert.equal(1, weak.callbacks(r).length)
     })
 
     it('should invoke the callback before the target is gc\'d', function () {
@@ -17,14 +17,14 @@ describe('weak()', function () {
       weak({}, function () {
         called = true
       })
-      called.should.equal.false
+      assert(!called)
       gc()
-      called.should.equal.true
+      assert(called)
     })
 
     it('should pass the target in as the first argument', function () {
       weak({ foo: 'bar' }, function (o) {
-        o.should.have.property('foo', 'bar')
+        assert.equal(o.foo, 'bar')
       })
       gc()
     })
@@ -41,8 +41,8 @@ describe('weak()', function () {
         called2 = true
       })
       gc()
-      called1.should.equal.true
-      called2.should.equal.true
+      assert(called1)
+      assert(called2)
     })
 
   })
@@ -53,8 +53,8 @@ describe('callbacks()', function () {
   it('should return the Weakref\'s internal "callback" Array', function () {
     var r = weak({})
       , callbacks = weak.callbacks(r)
-    callbacks.should.be.instanceof(Array)
-    callbacks.should.have.lengthOf(0)
+    assert(Array.isArray(callbacks))
+    assert.equal(0, callbacks.length)
   })
 
 })

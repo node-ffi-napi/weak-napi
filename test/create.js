@@ -1,5 +1,5 @@
-var should = require('should')
-  , weak = require('../')
+var assert = require('assert')
+var weak = require('../')
 
 describe('create()', function () {
 
@@ -14,7 +14,7 @@ describe('create()', function () {
     , undefined
     , 'foo'
     ].forEach(function (val) {
-      should.throws(function () {
+      assert.throws(function () {
         weak.create(val)
       })
     })

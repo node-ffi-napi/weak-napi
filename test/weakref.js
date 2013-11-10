@@ -1,4 +1,4 @@
-require('should')
+var assert = require('assert')
 var weak = require('../')
 
 describe('Weakref', function () {
@@ -7,62 +7,62 @@ describe('Weakref', function () {
 
   it('weak() should return a `Weakref` instance', function () {
     var ref = weak({})
-    weak.isWeakRef(ref).should.be.true
+    assert(weak.isWeakRef(ref))
   })
 
   it('should proxy named gets to the target', function () {
     var o = { foo: 'bar' }
       , r = weak(o)
-    r.should.have.property('foo', 'bar')
+    assert.equal(r.foo, 'bar')
   })
 
   it('should proxy named sets to the target', function () {
     var o = {}
       , r = weak(o)
     r.foo = 'bar'
-    o.should.have.property('foo', 'bar')
+    assert.equal(r.foo, 'bar')
   })
 
   it('should proxy named deletes to the target', function () {
     var o = { foo: 'bar' }
      ,  r = weak(o)
     delete r.foo
-    o.should.not.have.property('foo')
+    console.error(Object.getOwnPropertyNames(r));
+    assert(!('foo' in r))
   })
 
   it('should proxy indexed gets to the target', function () {
     var a = [ 'foo' ]
       , r = weak(a)
-    a.should.have.lengthOf(1)
-    r.should.have.lengthOf(1)
-    r[0].should.equal('foo')
+    assert.equal(1, a.length)
+    assert.equal(1, r.length)
+    assert.equal('foo', r[0])
   })
 
   it('should proxy indexed sets to the target', function () {
     var a = []
       , r = weak(a)
-    a.should.have.lengthOf(0)
-    r.should.have.lengthOf(0)
+    assert.equal(0, a.length)
+    assert.equal(0, r.length)
     r[0] = 'foo'
-    a.should.have.lengthOf(1)
-    a[0].should.equal('foo')
+    assert.equal(1, a.length)
+    assert.equal('foo', a[0])
     r.push('bar')
-    a.should.have.lengthOf(2)
-    a[1].should.equal('bar')
+    assert.equal(2, a.length)
+    assert.equal('bar', a[1])
   })
 
   it('should proxy indexed deletes to the target', function () {
     var a = [ 'foo' ]
       , r = weak(a)
     delete r[0]
-    var t = typeof a[0]
-    t.should.equal('undefined')
+    assert.equal('undefined', typeof a[0])
   })
 
   it('should proxy enumeration', function () {
     var o = { a: 'a', b: 'b', c: 'c', d: 'd' }
       , r = weak(o)
-    r.should.have.keys(Object.keys(o))
+    assert.deepEquals(Object.keys(o), Object.keys(r))
   })
 
   it('should act like an empty object after target is gc\'d'
@@ -70,10 +70,10 @@ describe('Weakref', function () {
     var o = { foo: 'bar' }
       , r = weak(o)
     o = null
-    r.should.have.property('foo', 'bar')
+    assert.equal('bar', r.foo)
     gc()
-    r.should.not.have.property('foo')
-    Object.keys(r).should.have.lengthOf(0)
+    assert(!('foo' in r))
+    assert.equal(0,Object.keys(r).length)
   })
 
 })

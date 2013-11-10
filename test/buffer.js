@@ -1,4 +1,4 @@
-require('should')
+var assert = require('assert')
 var weak = require('../')
 
 describe('weak()', function () {
@@ -12,12 +12,12 @@ describe('weak()', function () {
       var called = false
       weak(Buffer('test'), function (buf) {
         called = true
-        buf.toString().should.equal('test')
+        assert.equal('test', buf.toString())
       })
 
-      called.should.be.false
+      assert(!called)
       gc()
-      called.should.be.true
+      assert(called)
     })
 
   })

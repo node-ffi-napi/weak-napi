@@ -30,7 +30,6 @@
     "bindings": "*"
   },
   "devDependencies": {
-    "mocha": "> 0.7.0",
-    "should": "*"
+    "mocha": "> 0.7.0"
   }
 }
