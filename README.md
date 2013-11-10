@@ -125,6 +125,12 @@ before the object is garbage collected.
 created with. If this is called with a dead reference, `undefined` is returned.
 
 
+### Boolean weak.isWeakRef(Object obj)
+
+Checks to see if `obj` is "weak reference" instance. Returns `true` if the
+passed in object is a "weak reference", `false` otherwise.
+
+
 ### Boolean weak.isDead(weakref ref)
 
 Checks to see if `ref` is a dead reference. Returns `true` if the original Object
