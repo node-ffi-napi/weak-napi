@@ -1,7 +1,7 @@
 node-weak
 =========
 ### Make weak references to JavaScript Objects.
-[![Build Status](https://travis-ci.org/TooTallNate/node-weak.png?branch=refactor/nan)](https://travis-ci.org/TooTallNate/node-weak)
+[![Build Status](https://travis-ci.org/TooTallNate/node-weak.png?branch=master)](https://travis-ci.org/TooTallNate/node-weak)
 
 On certain rarer occasions, you run into the need to be notified when a JavaScript
 object is going to be garbage collected. This feature is exposed to V8's C++ API,
