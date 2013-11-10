@@ -27,8 +27,7 @@ describe('Weakref', function () {
     var o = { foo: 'bar' }
      ,  r = weak(o)
     delete r.foo
-    console.error(Object.getOwnPropertyNames(r));
-    assert(!('foo' in r))
+    assert(!r.foo)
   })
 
   it('should proxy indexed gets to the target', function () {
@@ -62,7 +61,7 @@ describe('Weakref', function () {
   it('should proxy enumeration', function () {
     var o = { a: 'a', b: 'b', c: 'c', d: 'd' }
       , r = weak(o)
-    assert.deepEquals(Object.keys(o), Object.keys(r))
+    assert.deepEqual(Object.keys(o), Object.keys(r))
   })
 
   it('should act like an empty object after target is gc\'d'
@@ -72,7 +71,7 @@ describe('Weakref', function () {
     o = null
     assert.equal('bar', r.foo)
     gc()
-    assert(!('foo' in r))
+    assert(!r.foo)
     assert.equal(0,Object.keys(r).length)
   })
 
