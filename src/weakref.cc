@@ -137,9 +137,8 @@ void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
 NAN_WEAK_CALLBACK(void*, TargetCallback) {
   NanScope();
   Persistent<Value> target = NAN_WEAK_CALLBACK_OBJECT;
-  void* arg = NAN_WEAK_CALLBACK_DATA(void *);
-
   assert(target.IsNearDeath());
+  void* arg = NAN_WEAK_CALLBACK_DATA(void *);
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
 
@@ -161,13 +160,11 @@ NAN_WEAK_CALLBACK(void*, TargetCallback) {
     }
   }
 
+  // clean everything up
   NanSetInternalFieldPointer(cont-> proxy, 0, NULL);
-  cont->proxy.Dispose();
-  cont->proxy.Clear();
-  cont->target.Dispose();
-  cont->target.Clear();
-  cont->callbacks.Dispose();
-  cont->callbacks.Clear();
+  NanDispose(cont->proxy);
+  NanDispose(cont->target);
+  NanDispose(cont->callbacks);
   free(cont);
 }
 
@@ -182,10 +179,9 @@ NAN_METHOD(Create) {
   proxy_container *cont = (proxy_container *)
     malloc(sizeof(proxy_container));
 
-  cont->target = Persistent<Object>::New(args[0]->ToObject());
-  cont->callbacks = Persistent<Array>::New(Array::New());
-
-  cont->proxy = Persistent<Object>::New(proxyClass->NewInstance());
+  NanAssignPersistent(Object, cont->target, args[0]->ToObject());
+  NanAssignPersistent(Array, cont->callbacks, Array::New());
+  NanAssignPersistent(Object, cont->proxy, proxyClass->NewInstance());
   NanSetInternalFieldPointer(cont->proxy, 0, cont);
 
   NanMakeWeak(cont->target, cont, TargetCallback);
@@ -194,7 +190,7 @@ NAN_METHOD(Create) {
     AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
   }
 
-  return cont->proxy;
+  NanReturnValue(cont->proxy);
 }
 
 /**
@@ -207,7 +203,7 @@ bool isWeakRef (Handle<Value> val) {
 
 NAN_METHOD(IsWeakRef) {
   NanScope();
-  return Boolean::New(isWeakRef(args[0]));
+  NanReturnValue(Boolean::New(isWeakRef(args[0])));
 }
 
 NAN_METHOD(Get) {
@@ -219,10 +215,10 @@ NAN_METHOD(Get) {
   Local<Object> proxy = args[0]->ToObject();
 
   const bool dead = IsDead(proxy);
-  if (dead) return Undefined();
+  if (dead) NanReturnUndefined();
 
   Handle<Object> obj = Unwrap(proxy);
-  return scope.Close(obj);
+  NanReturnValue(obj);
 }
 
 NAN_METHOD(IsNearDeath) {
@@ -240,7 +236,7 @@ NAN_METHOD(IsNearDeath) {
 
   Handle<Boolean> rtn = Boolean::New(cont->target.IsNearDeath());
 
-  return scope.Close(rtn);
+  NanReturnValue(rtn);
 }
 
 NAN_METHOD(IsDead) {
