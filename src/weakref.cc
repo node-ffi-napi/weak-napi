@@ -166,7 +166,8 @@ NAN_METHOD(Create) {
   proxy_container *cont = (proxy_container *)
     malloc(sizeof(proxy_container));
 
-  NanAssignPersistent(Object, cont->proxy, NanPersistentToLocal(proxyClass)->NewInstance());
+  Local<Object> proxy = NanPersistentToLocal(proxyClass)->NewInstance();
+  NanAssignPersistent(Object, cont->proxy, proxy);
   NanAssignPersistent(Object, cont->target, args[0]->ToObject());
   NanAssignPersistent(Object, cont->emitter, args[1]->ToObject());
 
@@ -174,7 +175,7 @@ NAN_METHOD(Create) {
 
   NanMakeWeak(cont->target, reinterpret_cast<void *>(cont), TargetCallback);
 
-  NanReturnValue(NanPersistentToLocal(cont->proxy));
+  NanReturnValue(proxy);
 }
 
 /**
