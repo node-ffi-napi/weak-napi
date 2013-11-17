@@ -117,6 +117,11 @@ NAN_INDEX_DELETER(WeakIndexedPropertyDeleter) {
 }
 
 
+/**
+ * Only one "enumerator" function needs to be defined. This function is used for
+ * both the property and indexed enumerator functions.
+ */
+
 NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
   UNWRAP
   NanReturnValue(dead ? Array::New(0) : obj->GetPropertyNames());
