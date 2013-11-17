@@ -255,6 +255,7 @@ NAN_METHOD(GetEmitter) {
  */
 
 NAN_METHOD(SetCallback) {
+  NanScope();
   Local<Function> callbackHandle = args[0].As<Function>();
   globalCallback = new NanCallback(callbackHandle);
   NanReturnUndefined();
