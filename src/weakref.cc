@@ -208,13 +208,15 @@ NAN_METHOD(IsWeakRef) {
   NanReturnValue(Boolean::New(isWeakRef(args[0])));
 }
 
+#define WEAKREF_FIRST_ARG                                    \
+  if (!isWeakRef(args[0])) {                                 \
+    return NanThrowTypeError("Weakref instance expected");   \
+  }                                                          \
+  Local<Object> proxy = args[0]->ToObject();
+
 NAN_METHOD(Get) {
   NanScope();
-
-  if (!isWeakRef(args[0])) {
-    return NanThrowTypeError("Weakref instance expected");
-  }
-  Local<Object> proxy = args[0]->ToObject();
+  WEAKREF_FIRST_ARG
 
   const bool dead = IsDead(proxy);
   if (dead) NanReturnUndefined();
@@ -225,11 +227,7 @@ NAN_METHOD(Get) {
 
 NAN_METHOD(IsNearDeath) {
   NanScope();
-
-  if (!isWeakRef(args[0])) {
-    return NanThrowTypeError("Weakref instance expected");
-  }
-  Local<Object> proxy = args[0]->ToObject();
+  WEAKREF_FIRST_ARG
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(
     NanGetInternalFieldPointer(proxy, 0)
@@ -243,11 +241,7 @@ NAN_METHOD(IsNearDeath) {
 
 NAN_METHOD(IsDead) {
   NanScope();
-
-  if (!isWeakRef(args[0])) {
-    return NanThrowTypeError("Weakref instance expected");
-  }
-  Local<Object> proxy = args[0]->ToObject();
+  WEAKREF_FIRST_ARG
 
   const bool dead = IsDead(proxy);
   NanReturnValue(Boolean::New(dead));
@@ -256,11 +250,7 @@ NAN_METHOD(IsDead) {
 
 NAN_METHOD(AddCallback) {
   NanScope();
-
-  if (!isWeakRef(args[0])) {
-    return NanThrowTypeError("Weakref instance expected");
-  }
-  Local<Object> proxy = args[0]->ToObject();
+  WEAKREF_FIRST_ARG
 
   AddCallback(proxy, Handle<Function>::Cast(args[1]));
 
@@ -269,11 +259,7 @@ NAN_METHOD(AddCallback) {
 
 NAN_METHOD(Callbacks) {
   NanScope();
-
-  if (!isWeakRef(args[0])) {
-    return NanThrowTypeError("Weakref instance expected");
-  }
-  Local<Object> proxy = args[0]->ToObject();
+  WEAKREF_FIRST_ARG
 
   NanReturnValue(GetCallbacks(proxy));
 }
