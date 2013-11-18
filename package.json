@@ -27,9 +27,10 @@
     "node": "*"
   },
   "dependencies": {
-    "bindings": "*"
+    "bindings": "*",
+    "nan": "0"
   },
   "devDependencies": {
-    "mocha": "> 0.7.0"
+    "mocha": "~1.14.0"
   }
 }

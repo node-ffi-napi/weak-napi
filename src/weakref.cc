@@ -15,9 +15,8 @@
  */
 
 #include <stdlib.h>
-#include "v8.h"
 #include "node.h"
-#include "node_version.h"
+#include "nan.h"
 
 using namespace v8;
 using namespace node;
@@ -25,24 +24,24 @@ using namespace node;
 namespace {
 
 
-typedef struct proxy_container {
+class proxy_container {
+public:
   Persistent<Object> proxy;
   Persistent<Object> target;
-  Persistent<Array>  callbacks;
-} proxy_container;
+  Persistent<Object> emitter;
+};
 
 
 Persistent<ObjectTemplate> proxyClass;
+
+NanCallback *globalCallback;
 
 
 bool IsDead(Handle<Object> proxy) {
   assert(proxy->InternalFieldCount() == 1);
   proxy_container *cont = reinterpret_cast<proxy_container*>(
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-      proxy->GetAlignedPointerFromInternalField(0));
-#else
-      proxy->GetPointerFromInternalField(0));
-#endif
+    NanGetInternalFieldPointer(proxy, 0)
+  );
   return cont == NULL || cont->target.IsEmpty();
 }
 
@@ -50,171 +49,133 @@ bool IsDead(Handle<Object> proxy) {
 Handle<Object> Unwrap(Handle<Object> proxy) {
   assert(!IsDead(proxy));
   proxy_container *cont = reinterpret_cast<proxy_container*>(
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-      proxy->GetAlignedPointerFromInternalField(0));
-#else
-      proxy->GetPointerFromInternalField(0));
-#endif
-  return cont->target;
+    NanGetInternalFieldPointer(proxy, 0)
+  );
+  return NanPersistentToLocal(cont->target);
 }
 
-Handle<Array> GetCallbacks(Handle<Object> proxy) {
+Handle<Object> GetEmitter(Handle<Object> proxy) {
   proxy_container *cont = reinterpret_cast<proxy_container*>(
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-      proxy->GetAlignedPointerFromInternalField(0));
-#else
-      proxy->GetPointerFromInternalField(0));
-#endif
+    NanGetInternalFieldPointer(proxy, 0)
+  );
   assert(cont != NULL);
-  return cont->callbacks;
+  return NanPersistentToLocal(cont->emitter);
 }
 
 
 #define UNWRAP                            \
-  HandleScope scope;                      \
+  NanScope();                             \
   Handle<Object> obj;                     \
-  const bool dead = IsDead(info.This());  \
-  if (!dead) obj = Unwrap(info.This());   \
+  const bool dead = IsDead(args.This());  \
+  if (!dead) obj = Unwrap(args.This());   \
 
 
-Handle<Value> WeakNamedPropertyGetter(Local<String> property,
-                                      const AccessorInfo& info) {
+NAN_PROPERTY_GETTER(WeakNamedPropertyGetter) {
   UNWRAP
-  return dead ? Local<Value>() : obj->Get(property);
+  NanReturnValue(dead ? Local<Value>() : obj->Get(property));
 }
 
 
-Handle<Value> WeakNamedPropertySetter(Local<String> property,
-                                      Local<Value> value,
-                                      const AccessorInfo& info) {
+NAN_PROPERTY_SETTER(WeakNamedPropertySetter) {
   UNWRAP
   if (!dead) obj->Set(property, value);
-  return value;
+  NanReturnValue(value);
 }
 
 
-Handle<Integer> WeakNamedPropertyQuery(Local<String> property,
-                                       const AccessorInfo& info) {
-  return HandleScope().Close(Integer::New(None));
+NAN_PROPERTY_QUERY(WeakNamedPropertyQuery) {
+  NanScope();
+  NanReturnValue(Integer::New(None));
 }
 
 
-Handle<Boolean> WeakNamedPropertyDeleter(Local<String> property,
-                                         const AccessorInfo& info) {
+NAN_PROPERTY_DELETER(WeakNamedPropertyDeleter) {
   UNWRAP
-  return Boolean::New(!dead && obj->Delete(property));
+  NanReturnValue(Boolean::New(!dead && obj->Delete(property)));
 }
 
 
-Handle<Value> WeakIndexedPropertyGetter(uint32_t index,
-                                        const AccessorInfo& info) {
+NAN_INDEX_GETTER(WeakIndexedPropertyGetter) {
   UNWRAP
-  return dead ? Local<Value>() : obj->Get(index);
+  NanReturnValue(dead ? Local<Value>() : obj->Get(index));
 }
 
 
-Handle<Value> WeakIndexedPropertySetter(uint32_t index,
-                                        Local<Value> value,
-                                        const AccessorInfo& info) {
+NAN_INDEX_SETTER(WeakIndexedPropertySetter) {
   UNWRAP
   if (!dead) obj->Set(index, value);
-  return value;
+  NanReturnValue(value);
 }
 
 
-Handle<Integer> WeakIndexedPropertyQuery(uint32_t index,
-                                         const AccessorInfo& info) {
-  return HandleScope().Close(Integer::New(None));
+NAN_INDEX_QUERY(WeakIndexedPropertyQuery) {
+  NanScope();
+  NanReturnValue(Integer::New(None));
 }
 
 
-Handle<Boolean> WeakIndexedPropertyDeleter(uint32_t index,
-                                           const AccessorInfo& info) {
+NAN_INDEX_DELETER(WeakIndexedPropertyDeleter) {
   UNWRAP
-  return Boolean::New(!dead && obj->Delete(index));
+  NanReturnValue(Boolean::New(!dead && obj->Delete(index)));
 }
 
 
-Handle<Array> WeakPropertyEnumerator(const AccessorInfo& info) {
+/**
+ * Only one "enumerator" function needs to be defined. This function is used for
+ * both the property and indexed enumerator functions.
+ */
+
+NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
   UNWRAP
-  return HandleScope().Close(dead ? Array::New(0) : obj->GetPropertyNames());
+  NanReturnValue(dead ? Array::New(0) : obj->GetPropertyNames());
 }
 
+/**
+ * Weakref callback function. Invokes the "global" callback function.
+ */
 
-void AddCallback(Handle<Object> proxy, Handle<Function> callback) {
-  Handle<Array> callbacks = GetCallbacks(proxy);
-  callbacks->Set(Integer::New(callbacks->Length()), callback);
+NAN_WEAK_CALLBACK(void *, TargetCallback) {
+  NanScope();
+
+  assert(NAN_WEAK_CALLBACK_OBJECT.IsNearDeath());
+  void *arg = NAN_WEAK_CALLBACK_DATA(void *);
+  proxy_container *cont = reinterpret_cast<proxy_container *>(arg);
+
+  // invoke global callback function
+  Local<Value> argv[] = {
+    NanPersistentToLocal(NAN_WEAK_CALLBACK_OBJECT),
+    NanPersistentToLocal(cont->emitter)
+  };
+  globalCallback->Call(2, argv);
+
+  // clean everything up
+  NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, NULL);
+  NanDispose(cont->proxy);
+  NanDispose(cont->target);
+  NanDispose(cont->emitter);
+  delete cont;
 }
 
+/**
+ * `_create(obj, emitter)` JS function.
+ */
 
-void TargetCallback(Persistent<Value> target, void* arg) {
-  HandleScope scope;
+NAN_METHOD(Create) {
+  NanScope();
+  if (!args[0]->IsObject()) return NanThrowTypeError("Object expected");
 
-  assert(target.IsNearDeath());
+  proxy_container *cont = new proxy_container();
 
-  proxy_container *cont = reinterpret_cast<proxy_container*>(arg);
+  Local<Object> proxy = NanPersistentToLocal(proxyClass)->NewInstance();
+  NanAssignPersistent(Object, cont->proxy, proxy);
+  NanAssignPersistent(Object, cont->target, args[0].As<Object>());
+  NanAssignPersistent(Object, cont->emitter, args[1].As<Object>());
 
-  // invoke any listening callbacks
-  uint32_t len = cont->callbacks->Length();
-  Handle<Value> argv[1];
-  argv[0] = target;
-  for (uint32_t i=0; i<len; i++) {
+  NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, cont);
 
-    Handle<Function> cb = Handle<Function>::Cast(
-        cont->callbacks->Get(Integer::New(i)));
+  NanMakeWeak(cont->target, reinterpret_cast<void *>(cont), TargetCallback);
 
-    TryCatch try_catch;
-
-    cb->Call(target->ToObject(), 1, argv);
-
-    if (try_catch.HasCaught()) {
-      FatalException(try_catch);
-    }
-  }
-
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-  cont->proxy->SetAlignedPointerInInternalField(0, NULL);
-#else
-  cont->proxy->SetPointerInInternalField(0, NULL);
-#endif
-  cont->proxy.Dispose();
-  cont->proxy.Clear();
-  cont->target.Dispose();
-  cont->target.Clear();
-  cont->callbacks.Dispose();
-  cont->callbacks.Clear();
-  free(cont);
-}
-
-
-Handle<Value> Create(const Arguments& args) {
-  HandleScope scope;
-
-  if (!args[0]->IsObject()) {
-    Local<String> message = String::New("Object expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-
-  proxy_container *cont = (proxy_container *)
-    malloc(sizeof(proxy_container));
-
-  cont->target = Persistent<Object>::New(args[0]->ToObject());
-  cont->callbacks = Persistent<Array>::New(Array::New());
-
-  cont->proxy = Persistent<Object>::New(proxyClass->NewInstance());
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-  cont->proxy->SetAlignedPointerInInternalField(0, cont);
-#else
-  cont->proxy->SetPointerInInternalField(0, cont);
-#endif
-
-  cont->target.MakeWeak(cont, TargetCallback);
-
-  if (args.Length() >= 2) {
-    AddCallback(cont->proxy, Handle<Function>::Cast(args[1]));
-  }
-
-  return cont->proxy;
+  NanReturnValue(proxy);
 }
 
 /**
@@ -222,117 +183,112 @@ Handle<Value> Create(const Arguments& args) {
  */
 
 bool isWeakRef (Handle<Value> val) {
-  return val->IsObject() && val->ToObject()->InternalFieldCount() == 1;
+  return val->IsObject() && val.As<Object>()->InternalFieldCount() == 1;
 }
 
-Handle<Value> IsWeakRef (const Arguments& args) {
-  HandleScope scope;
-  return Boolean::New(isWeakRef(args[0]));
+/**
+ * `isWeakRef()` JS function.
+ */
+
+NAN_METHOD(IsWeakRef) {
+  NanScope();
+  NanReturnValue(Boolean::New(isWeakRef(args[0])));
 }
 
-Handle<Value> Get(const Arguments& args) {
-  HandleScope scope;
+#define WEAKREF_FIRST_ARG                                    \
+  if (!isWeakRef(args[0])) {                                 \
+    return NanThrowTypeError("Weakref instance expected");   \
+  }                                                          \
+  Local<Object> proxy = args[0].As<Object>();
 
-  if (!isWeakRef(args[0])) {
-    Local<String> message = String::New("Weakref instance expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-  Local<Object> proxy = args[0]->ToObject();
+/**
+ * `get(weakref)` JS function.
+ */
 
-  const bool dead = IsDead(proxy);
-  if (dead) return Undefined();
-
-  Handle<Object> obj = Unwrap(proxy);
-  return scope.Close(obj);
+NAN_METHOD(Get) {
+  NanScope();
+  WEAKREF_FIRST_ARG
+  if (IsDead(proxy)) NanReturnUndefined();
+  NanReturnValue(Unwrap(proxy));
 }
 
-Handle<Value> IsNearDeath(const Arguments& args) {
-  HandleScope scope;
+/**
+ * `isNearDeath(weakref)` JS function.
+ */
 
-  if (!isWeakRef(args[0])) {
-    Local<String> message = String::New("Weakref instance expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-  Local<Object> proxy = args[0]->ToObject();
+NAN_METHOD(IsNearDeath) {
+  NanScope();
+  WEAKREF_FIRST_ARG
 
   proxy_container *cont = reinterpret_cast<proxy_container*>(
-#if NODE_VERSION_AT_LEAST(0, 11, 0)
-      proxy->GetAlignedPointerFromInternalField(0));
-#else
-      proxy->GetPointerFromInternalField(0));
-#endif
+    NanGetInternalFieldPointer(proxy, 0)
+  );
   assert(cont != NULL);
 
   Handle<Boolean> rtn = Boolean::New(cont->target.IsNearDeath());
 
-  return scope.Close(rtn);
+  NanReturnValue(rtn);
 }
 
-Handle<Value> IsDead(const Arguments& args) {
-  HandleScope scope;
+/**
+ * `isDead(weakref)` JS function.
+ */
 
-  if (!isWeakRef(args[0])) {
-    Local<String> message = String::New("Weakref instance expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-  Local<Object> proxy = args[0]->ToObject();
-
-  const bool dead = IsDead(proxy);
-  return Boolean::New(dead);
+NAN_METHOD(IsDead) {
+  NanScope();
+  WEAKREF_FIRST_ARG
+  NanReturnValue(Boolean::New(IsDead(proxy)));
 }
 
+/**
+ * `_getEmitter(weakref)` JS function.
+ */
 
-Handle<Value> AddCallback(const Arguments& args) {
-  HandleScope scope;
-
-  if (!isWeakRef(args[0])) {
-    Local<String> message = String::New("Weakref instance expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-  Local<Object> proxy = args[0]->ToObject();
-
-  AddCallback(proxy, Handle<Function>::Cast(args[1]));
-
-  return Undefined();
+NAN_METHOD(GetEmitter) {
+  NanScope();
+  WEAKREF_FIRST_ARG
+  NanReturnValue(GetEmitter(proxy));
 }
 
-Handle<Value> Callbacks(const Arguments& args) {
-  HandleScope scope;
+/**
+ * Sets the global weak callback function.
+ */
 
-  if (!isWeakRef(args[0])) {
-    Local<String> message = String::New("Weakref instance expected");
-    return ThrowException(Exception::TypeError(message));
-  }
-  Local<Object> proxy = args[0]->ToObject();
-
-  return scope.Close(GetCallbacks(proxy));
+NAN_METHOD(SetCallback) {
+  NanScope();
+  Local<Function> callbackHandle = args[0].As<Function>();
+  globalCallback = new NanCallback(callbackHandle);
+  NanReturnUndefined();
 }
 
+/**
+ * Init function.
+ */
 
-void Initialize(Handle<Object> target) {
-  HandleScope scope;
+void Initialize(Handle<Object> exports) {
+  NanScope();
 
-  proxyClass = Persistent<ObjectTemplate>::New(ObjectTemplate::New());
-  proxyClass->SetNamedPropertyHandler(WeakNamedPropertyGetter,
-                                      WeakNamedPropertySetter,
-                                      WeakNamedPropertyQuery,
-                                      WeakNamedPropertyDeleter,
-                                      WeakPropertyEnumerator);
-  proxyClass->SetIndexedPropertyHandler(WeakIndexedPropertyGetter,
-                                        WeakIndexedPropertySetter,
-                                        WeakIndexedPropertyQuery,
-                                        WeakIndexedPropertyDeleter,
-                                        WeakPropertyEnumerator);
-  proxyClass->SetInternalFieldCount(1);
+  Handle<ObjectTemplate> p = ObjectTemplate::New();
+  NanAssignPersistent(ObjectTemplate, proxyClass, p);
+  p->SetNamedPropertyHandler(WeakNamedPropertyGetter,
+                             WeakNamedPropertySetter,
+                             WeakNamedPropertyQuery,
+                             WeakNamedPropertyDeleter,
+                             WeakPropertyEnumerator);
+  p->SetIndexedPropertyHandler(WeakIndexedPropertyGetter,
+                               WeakIndexedPropertySetter,
+                               WeakIndexedPropertyQuery,
+                               WeakIndexedPropertyDeleter,
+                               WeakPropertyEnumerator);
+  p->SetInternalFieldCount(1);
 
-  NODE_SET_METHOD(target, "get", Get);
-  NODE_SET_METHOD(target, "create", Create);
-  NODE_SET_METHOD(target, "isWeakRef", IsWeakRef);
-  NODE_SET_METHOD(target, "isNearDeath", IsNearDeath);
-  NODE_SET_METHOD(target, "isDead", IsDead);
-  NODE_SET_METHOD(target, "callbacks", Callbacks);
-  NODE_SET_METHOD(target, "addCallback", AddCallback);
-
+  NODE_SET_METHOD(exports, "get", Get);
+  NODE_SET_METHOD(exports, "isWeakRef", IsWeakRef);
+  NODE_SET_METHOD(exports, "isNearDeath", IsNearDeath);
+  NODE_SET_METHOD(exports, "isDead", IsDead);
+  NODE_SET_METHOD(exports, "_create", Create);
+  NODE_SET_METHOD(exports, "_getEmitter", GetEmitter);
+  NODE_SET_METHOD(exports, "_setCallback", SetCallback);
 }
 
 } // anonymous namespace
