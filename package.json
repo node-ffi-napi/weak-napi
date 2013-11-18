@@ -14,7 +14,7 @@
     "function",
     "callback"
   ],
-  "version": "0.2.2",
+  "version": "0.3.0",
   "repository": {
     "type": "git",
     "url": "git://github.com/TooTallNate/node-weak.git"
@@ -24,7 +24,7 @@
     "test": "mocha -gc --reporter spec"
   },
   "engines": {
-    "node": "*"
+    "node": ">= 0.7"
   },
   "dependencies": {
     "bindings": "*",
