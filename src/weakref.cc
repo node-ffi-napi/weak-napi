@@ -133,11 +133,11 @@ NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
  * Weakref callback function. Invokes the "global" callback function.
  */
 
-NAN_WEAK_CALLBACK(void*, TargetCallback) {
+NAN_WEAK_CALLBACK(void *, TargetCallback) {
   NanScope();
 
   assert(NAN_WEAK_CALLBACK_OBJECT.IsNearDeath());
-  void* arg = NAN_WEAK_CALLBACK_DATA(void *);
+  void *arg = NAN_WEAK_CALLBACK_DATA(void *);
   proxy_container *cont = reinterpret_cast<proxy_container *>(arg);
 
   // invoke global callback function
@@ -168,8 +168,8 @@ NAN_METHOD(Create) {
 
   Local<Object> proxy = NanPersistentToLocal(proxyClass)->NewInstance();
   NanAssignPersistent(Object, cont->proxy, proxy);
-  NanAssignPersistent(Object, cont->target, args[0]->ToObject());
-  NanAssignPersistent(Object, cont->emitter, args[1]->ToObject());
+  NanAssignPersistent(Object, cont->target, args[0].As<Object>());
+  NanAssignPersistent(Object, cont->emitter, args[1].As<Object>());
 
   NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, cont);
 
@@ -183,7 +183,7 @@ NAN_METHOD(Create) {
  */
 
 bool isWeakRef (Handle<Value> val) {
-  return val->IsObject() && val->ToObject()->InternalFieldCount() == 1;
+  return val->IsObject() && val.As<Object>()->InternalFieldCount() == 1;
 }
 
 /**
@@ -199,7 +199,7 @@ NAN_METHOD(IsWeakRef) {
   if (!isWeakRef(args[0])) {                                 \
     return NanThrowTypeError("Weakref instance expected");   \
   }                                                          \
-  Local<Object> proxy = args[0]->ToObject();
+  Local<Object> proxy = args[0].As<Object>();
 
 /**
  * `get(weakref)` JS function.
