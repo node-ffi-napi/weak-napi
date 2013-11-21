@@ -28,7 +28,7 @@
   },
   "dependencies": {
     "bindings": "*",
-    "nan": "0"
+    "nan": ">= 0.6.0 && < 1"
   },
   "devDependencies": {
     "mocha": "~1.14.0"
