@@ -19,7 +19,7 @@
     "type": "git",
     "url": "git://github.com/TooTallNate/node-weak.git"
   },
-  "main": "./lib/weak.js",
+  "main": "lib/weak.js",
   "scripts": {
     "test": "mocha -gc --reporter spec"
   },
