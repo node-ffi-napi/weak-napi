@@ -150,9 +150,9 @@ NAN_WEAK_CALLBACK(void *, TargetCallback) {
 
   // clean everything up
   NanSetInternalFieldPointer(NanPersistentToLocal(cont->proxy), 0, NULL);
-  NanDispose(cont->proxy);
-  NanDispose(cont->target);
-  NanDispose(cont->emitter);
+  NanDisposePersistent(cont->proxy);
+  NanDisposePersistent(cont->target);
+  NanDisposePersistent(cont->emitter);
   delete cont;
 }
 
