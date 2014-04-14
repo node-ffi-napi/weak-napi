@@ -23,9 +23,6 @@
   "scripts": {
     "test": "mocha -gc --reporter spec"
   },
-  "engines": {
-    "node": ">= 0.7"
-  },
   "dependencies": {
     "bindings": "*",
     "nan": ">= 0.8.0 && < 1"
