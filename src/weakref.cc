@@ -213,7 +213,6 @@ NAN_METHOD(IsWeakRef) {
 NAN_METHOD(Get) {
   NanScope();
   WEAKREF_FIRST_ARG
-  printf("get!\n");
   if (IsDead(proxy)) NanReturnUndefined();
   NanReturnValue(Unwrap(proxy));
 }
@@ -231,7 +230,6 @@ NAN_METHOD(IsNearDeath) {
   );
   assert(cont != NULL);
 
-  printf("IsNearDeath!\n");
   Handle<Boolean> rtn = NanNew<Boolean>(cont->cbinfo->persistent.IsNearDeath());
 
   NanReturnValue(rtn);
@@ -244,7 +242,6 @@ NAN_METHOD(IsNearDeath) {
 NAN_METHOD(IsDead) {
   NanScope();
   WEAKREF_FIRST_ARG
-  printf("isDead!\n");
   NanReturnValue(NanNew<Boolean>(IsDead(proxy)));
 }
 
