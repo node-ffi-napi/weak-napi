@@ -52,10 +52,12 @@ function cleanup (o) {
 }
 
 // Here's where we set up the weak reference
-var ref = weak(obj, function () {
-  // `this` inside the callback is the 'obj'. DO NOT store any new references
-  // to the object, and DO NOT use the object in any async functions.
-  cleanup(this)
+var ref = weak(obj, function (obj) {
+  // `this` inside the callback is the EventEmitter.
+  // The first argument to the callback is the `obj`.
+  // DO NOT store any new references to the object, and
+  // DO NOT use the object in any async functions.
+  cleanup(obj)
 })
 
 // While `obj` is alive, `ref` proxies everything to it, so:
@@ -115,8 +117,10 @@ The main exports is the function that creates the weak reference.
 The first argument is the Object that should be monitored.
 The Object can be a regular Object, an Array, a Function, a RegExp, or any of
 the primitive types or constructor function created with `new`.
+
 Optionally, you can set a callback function to be invoked
-before the object is garbage collected.
+before the object is garbage collected. The callback will
+be invoked with `obj` as its first argument.
 
 
 ### Object weak.get(Weakref ref)
@@ -146,7 +150,7 @@ passed in object is a "weak reference", `false` otherwise.
 ### undefined weak.addCallback(Weakref ref, Function callback)
 
 Adds `callback` to the Array of callback functions that will be invoked before the
-Objects gets garbage collected. The callbacks get executed in the order that they
+Object gets garbage collected. The callbacks get executed in the order that they
 are added.
 
 
