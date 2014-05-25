@@ -1,10 +1,31 @@
+# http://www.appveyor.com/docs/appveyor-yml
+
+# Test against these versions of Node.js.
+environment:
+  matrix:
+    - nodejs_version: "0.8"
+    - nodejs_version: "0.10"
+    - nodejs_version: "0.11"
+
+# Install scripts. (runs after repo cloning)
 install:
-  - cinst nodejs.install -x86
-  - set PATH=%PATH%;"C:\Program Files (x86)\nodejs\"
+  # Get the latest stable version of Node 0.STABLE.latest
+  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
+  # Typical npm stuff.
+  - npm install
 
-build_script:
-  - git submodule update --init
-  - npm install --ignore-scripts
+# Post-install test scripts.
+test_script:
+  # Output useful info for debugging.
+  - node --version
+  - npm --version
+  # We test multiple Windows shells because of prior stdout buffering issues
+  # filed against Grunt. https://github.com/joyent/node/issues/3584
+  - ps: "npm test # PowerShell" # Pass comment to PS for easier debugging
+  - cmd: npm test
 
-platforms:
-  - x32
+# Don't actually build.
+build: off
+
+# Set build version format here instead of in the admin panel.
+version: "{build}"
