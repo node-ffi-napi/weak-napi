@@ -157,7 +157,6 @@ NAN_WEAK_CALLBACK(TargetCallback) {
   NanSetInternalFieldPointer(proxy, 0, NULL);
   NanDisposePersistent(cont->proxy);
   NanDisposePersistent(cont->emitter);
-  data.Dispose();
   delete cont;
 }
 
