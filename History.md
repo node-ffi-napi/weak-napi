@@ -1,4 +1,11 @@
 
+0.3.3 / 2014-06-04
+==================
+
+  * appveyor: more generic comment
+  * package: update "mocha" to v1.20.1
+  * package: update "nan" to v1.2.0
+
 0.3.2 / 2014-05-25
 ==================
 
