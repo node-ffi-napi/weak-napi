@@ -1,4 +1,11 @@
 
+0.4.0 / 2015-02-18
+==================
+
+  * travis: test node v0.12
+  * package: update "nan" to v1.6.2 for Node v0.12 compatibility (#40, @GitStarInc)
+  * src: call callback directly to avoid unwanted preemption (#36)
+
 0.3.4 / 2015-01-27
 ==================
 
