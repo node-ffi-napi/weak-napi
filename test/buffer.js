@@ -12,7 +12,6 @@ describe('weak()', function () {
       var called = false
       weak(Buffer('test'), function (buf) {
         called = true
-        assert.equal('test', buf.toString())
       })
 
       assert(!called)
