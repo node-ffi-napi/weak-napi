@@ -9,8 +9,7 @@ environment:
 
 # Install scripts. (runs after repo cloning)
 install:
-  # Get the latest stable version of Node 0.STABLE.latest
-  - ps: Update-NodeJsInstallation (Get-NodeJsLatestBuild $env:nodejs_version)
+  - ps: Install-Product node $env:nodejs_version
   # Typical npm stuff.
   - npm install
 
@@ -19,10 +18,8 @@ test_script:
   # Output useful info for debugging.
   - node --version
   - npm --version
-  # We test multiple Windows shells because of Node.js stdout buffering issues:
-  # https://github.com/joyent/node/issues/3584
-  - ps: "npm test # PowerShell" # Pass comment to PS for easier debugging
-  - cmd: npm test
+  # run tests
+  - npm test
 
 # Don't actually build.
 build: off
