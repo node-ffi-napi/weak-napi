@@ -1,4 +1,18 @@
 
+1.0.0 / 2015-08-17
+==================
+
+  * added `removeCallback()` and `removeCallbacks()`
+  * appveyor: attempt to fix node v0.8
+  * appveyor: test x86 and x64
+  * travis: attempt to fix node v0.8
+  * travis: test "iojs"
+  * travis: run on new infrastructure
+  * package: update to NAN 2.0 (@kkoopa)
+  * package: stricter "bindings" version number
+  * package: specify "MIT" license
+  * README: update for API change
+
 0.4.1 / 2015-05-09
 ==================
 
