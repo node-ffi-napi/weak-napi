@@ -22,13 +22,6 @@ describe('weak()', function () {
       assert(called)
     })
 
-    it('should pass the target in as the first argument', function () {
-      weak({ foo: 'bar' }, function (o) {
-        assert.equal(o.foo, 'bar')
-      })
-      gc()
-    })
-
     it('should invoke *all* callbacks in the internal "callback" Array'
     , function () {
       var r = weak({})
