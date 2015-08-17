@@ -45,20 +45,10 @@ var obj = {
   , foo: 'bar'
 }
 
-// The function to call before Garbage Collection.
-// Note that by the time this is called, 'obj' has been set to `null`.
-function cleanup (o) {
-  delete o.a
-  delete o.foo
-}
-
 // Here's where we set up the weak reference
-var ref = weak(obj, function (obj) {
+var ref = weak(obj, function () {
   // `this` inside the callback is the EventEmitter.
-  // The first argument to the callback is the `obj`.
-  // DO NOT store any new references to the object, and
-  // DO NOT use the object in any async functions.
-  cleanup(obj)
+  console.log('"obj" has been garbage collected!')
 })
 
 // While `obj` is alive, `ref` proxies everything to it, so:
@@ -120,8 +110,7 @@ The Object can be a regular Object, an Array, a Function, a RegExp, or any of
 the primitive types or constructor function created with `new`.
 
 Optionally, you can set a callback function to be invoked
-before the object is garbage collected. The callback will
-be invoked with `obj` as its first argument.
+before the object is garbage collected.
 
 
 ### Object weak.get(Weakref ref)
@@ -154,15 +143,18 @@ Adds `callback` to the Array of callback functions that will be invoked before t
 Object gets garbage collected. The callbacks get executed in the order that they
 are added.
 
+
 ### EventEmitter weak.removeCallback(Weakref ref, Function callback)
 
 Removes `callback` from the Array of callback functions that will be invoked before
 the Object gets garbage collected.
 
+
 ### EventEmitter weak.removeCallbacks(Weakref ref)
 
 Empties the Array of callback functions that will be invoked before the Object gets
 garbage collected.
+
 
 ### Array weak.callbacks(Weakref ref)
 
