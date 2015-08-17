@@ -4,6 +4,7 @@
     "Nathan Rajlich <nathan@tootallnate.net> (http://tootallnate.net)"
   ],
   "name": "weak",
+  "license": "MIT",
   "description": "Make weak references to JavaScript Objects.",
   "keywords": [
     "weak",
