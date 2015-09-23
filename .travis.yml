@@ -15,9 +15,10 @@ node_js:
   - "0.8"
   - "0.10"
   - "0.12"
+  - "1"
+  - "2"
+  - "3"
   - "4"
-  - "iojs-v2.5"
-  - "iojs-v3"
 
 install:
   - PATH="`npm bin`:`npm bin -g`:$PATH"
