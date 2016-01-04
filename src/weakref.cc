@@ -133,6 +133,7 @@ NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
  */
 
 static void TargetCallback(const Nan::WeakCallbackInfo<proxy_container> &info) {
+  Nan::HandleScope scope;
   proxy_container *cont = info.GetParameter();
 
   // invoke global callback function
