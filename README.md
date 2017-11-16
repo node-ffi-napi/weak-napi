@@ -1,17 +1,21 @@
-node-weak
+weak-napi
 =========
 ### Make weak references to JavaScript Objects.
-[![Build Status](https://travis-ci.org/TooTallNate/node-weak.svg?branch=master)](https://travis-ci.org/TooTallNate/node-weak)
-[![Build Status](https://ci.appveyor.com/api/projects/status/09lf09d1a5hm24bq?svg=true)](https://ci.appveyor.com/project/TooTallNate/node-weak)
+
+[![NPM Version](https://img.shields.io/npm/v/weak-napi.svg?style=flat)](https://npmjs.org/package/weak-napi)
+[![NPM Downloads](https://img.shields.io/npm/dm/weak-napi.svg?style=flat)](https://npmjs.org/package/weak-napi)
+[![Build Status](https://travis-ci.org/node-ffi-napi/weak-napi.svg?style=flat&branch=master)](https://travis-ci.org/node-ffi-napi/weak-napi?branch=master)
+[![Coverage Status](https://coveralls.io/repos/node-ffi-napi/weak-napi/badge.svg?branch=master)](https://coveralls.io/r/node-ffi-napi/weak-napi?branch=master)
+[![Dependency Status](https://david-dm.org/node-ffi-napi/weak-napi.svg?style=flat)](https://david-dm.org/node-ffi-napi/weak-napi)
 
 On certain rarer occasions, you run into the need to be notified when a JavaScript
 object is going to be garbage collected. This feature is exposed to V8's C++ API,
 but not to JavaScript.
 
-That's where `node-weak` comes in! This module exports V8's `Persistent<Object>`
+That's where `weak-napi` comes in! This module exports the JS engine's GC tracking
 functionality to JavaScript. This allows you to create weak references, and
 optionally attach a callback function to any arbitrary JS object. The callback
-function will be invoked right before the Object is garbage collected (i.e. after
+function will be invoked right after the Object is garbage collected (i.e. after
 there are no more remaining references to the Object in JS-land).
 
 This module can, for example, be used for debugging; to determine whether or not
@@ -25,9 +29,24 @@ Installation
 Install with `npm`:
 
 ``` bash
-$ npm install weak
+$ npm install weak-napi
 ```
 
+Differences to node-weak
+------------------------
+
+This module exports the full `node-weak` API. The main differences are:
+
+- This module uses N-API! Yay. That’s a good thing – you don’t need to worry
+  about re-compiling your code anymore when upgrading Node.
+- GC callbacks are invoked at a suitable time (after the actual GC run has
+  finished). **This is nice because it means your process won’t
+  potentially crash.**
+- This module works on Node 6+, since it uses a `Proxy` object to give a more
+  complete referral of properties.
+- `isNearDeath()` is not supported (always returns false).
+
+That’s it!
 
 Example
 -------
@@ -36,7 +55,7 @@ Here's an example of calling a `cleanup()` function on a Object before it gets
 garbage collected:
 
 ``` js
-var weak = require('weak')
+var weak = require('weak-napi')
 
 // we are going to "monitor" this Object and invoke "cleanup"
 // before the object is garbage collected
@@ -70,7 +89,7 @@ typeof ref.foo === 'undefined'
 Weak Callback Function "Best Practices"
 ---------------------------------------
 
-It's important to be careful when using the "callbacks" feature of `node-weak`,
+It's important to be careful when using the "callbacks" feature of `weak-napi`,
 otherwise you can end up in a situation where the watched object will never
 be garbage collected.
 
@@ -81,7 +100,7 @@ work really well for this:
 
 ``` js
 var http = require('http')
-  , weak = require('weak')
+  , weak = require('weak-napi')
 
 http.createServer(function (req, res) {
   weak(req, gcReq)
@@ -127,8 +146,8 @@ has already been GC'd, `false` otherwise.
 
 ### Boolean weak.isNearDeath(Weakref ref)
 
-Checks to see if `ref` is "near death". This will be `true` exactly during the
-weak reference callback function, and `false` any other time.
+*Note* The N-API port of this module does not implement this and
+always returns `false`.
 
 
 ### Boolean weak.isWeakRef(Object obj)
