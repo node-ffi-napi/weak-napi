@@ -1,23 +1,20 @@
-var assert = require('assert')
-var weak = require('../')
+'use strict';
+const assert = require('assert');
+const weak = require('../');
 
 describe('weak()', function () {
-
-  afterEach(gc)
+  afterEach(gc);
 
   describe('Buffer', function () {
-
-    it('should invoke callback before destroying Buffer', function () {
-
-      var called = false
+    it('should invoke callback before destroying Buffer', function() {
+      let called = false;
       weak(Buffer('test'), function (buf) {
-        called = true
-      })
+        called = true;
+      });
 
-      assert(!called)
-      gc()
-      assert(called)
-    })
-
-  })
-})
+      assert(!called);
+      gc();
+      assert(called);
+    });
+  });
+});
