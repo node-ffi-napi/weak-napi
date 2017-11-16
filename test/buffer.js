@@ -6,7 +6,7 @@ describe('weak()', function () {
   afterEach(gc);
 
   describe('Buffer', function () {
-    it('should invoke callback before destroying Buffer', function() {
+    it('should invoke callback before destroying Buffer', function(done) {
       let called = false;
       weak(Buffer('test'), function (buf) {
         called = true;
@@ -14,7 +14,10 @@ describe('weak()', function () {
 
       assert(!called);
       gc();
-      assert(called);
+      setImmediate(() => {
+        assert(called);
+        done();
+      });
     });
   });
 });

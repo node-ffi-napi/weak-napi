@@ -11,18 +11,21 @@ describe('weak()', function() {
       assert.strictEqual(1, weak.callbacks(r).length);
     });
 
-    it('should invoke the callback before the target is gc\'d', function() {
+    it('should invoke the callback before the target is gc\'d', function(done) {
       let called = false;
       weak({}, function() {
         called = true
       });
       assert(!called);
       gc();
-      assert(called);
+      setImmediate(() => {
+        assert(called);
+        done();
+      });
     });
 
     it('should invoke *all* callbacks in the internal "callback" Array',
-       function() {
+       function(done) {
       const r = weak({});
       let called1 = false;
       let called2 = false;
@@ -33,8 +36,11 @@ describe('weak()', function() {
         called2 = true
       });
       gc();
-      assert(called1);
-      assert(called2);
+      setImmediate(() => {
+        assert(called1);
+        assert(called2);
+        done();
+      });
     })
 
     it('should preempt code for GC callback but not nextTick callbacks',
@@ -52,12 +58,11 @@ describe('weak()', function() {
       assert(!calledGcCallback);
       assert(!calledTickCallback);
       gc();
-      assert(calledGcCallback);
-      assert(!calledTickCallback);
-      setTimeout(function() {
+      setImmediate(() => {
+        assert(calledGcCallback);
         assert(calledTickCallback);
         done();
-      }, 0);
+      });
     });
   });
 });
