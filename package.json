@@ -1,9 +1,10 @@
 {
-  "author": "Ben Noordhuis <info@bnoordhuis.nl>",
+  "author": "Anna Henningsen <anna@addaleax.net>",
   "contributors": [
-    "Nathan Rajlich <nathan@tootallnate.net> (http://tootallnate.net)"
+    "Ben Noordhuis <info@bnoordhuis.nl>",
+    "Nathan Rajlich <nathan@tootallnate.net>"
   ],
-  "name": "weak",
+  "name": "weak-napi",
   "license": "MIT",
   "description": "Make weak references to JavaScript Objects.",
   "keywords": [
@@ -13,22 +14,23 @@
     "javascript",
     "object",
     "function",
-    "callback"
+    "callback",
+    "napi"
   ],
-  "version": "1.0.1",
+  "version": "1.0.0",
   "repository": {
     "type": "git",
-    "url": "git://github.com/TooTallNate/node-weak.git"
+    "url": "git://github.com/node-ffi-napi/weak-napi.git"
   },
   "main": "lib/weak.js",
   "scripts": {
-    "test": "mocha -gc --reporter spec"
+    "test": "mocha -gc"
   },
   "dependencies": {
-    "bindings": "^1.2.1",
-    "nan": "^2.0.5"
+    "bindings": "^1.3.0",
+    "node-addon-api": "^1.0.0"
   },
   "devDependencies": {
-    "mocha": "~2.1.0"
+    "mocha": "^4.0.1"
   }
 }

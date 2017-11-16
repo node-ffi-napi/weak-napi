@@ -1,289 +1,98 @@
-/*
- * Copyright (c) 2011, Ben Noordhuis <info@bnoordhuis.nl>
- *
- * Permission to use, copy, modify, and/or distribute this software for any
- * purpose with or without fee is hereby granted, provided that the above
- * copyright notice and this permission notice appear in all copies.
- *
- * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- */
+#include <napi.h>
+#include <uv.h>
+#include <assert.h>
+#include <memory>
 
-#include <stdlib.h>
-#include <nan.h>
-
-using namespace v8;
+using namespace Napi;
 
 namespace {
 
+template<typename T>
+void SetImmediate(Env env, T&& cb) {
+  T* ptr = new T(std::move(cb));
+  uv_check_t* check = new uv_check_t;
+  check->data = static_cast<void*>(ptr);
+  // TODO(addaleax): This should not need to be the default loop!
+  uv_check_init(uv_default_loop(), check);
+  uv_check_start(check, [](uv_check_t* check) {
+    std::unique_ptr<T> ptr (static_cast<T*>(check->data));
+    T cb = std::move(*ptr);
+    uv_check_stop(check);
+    uv_close(reinterpret_cast<uv_handle_t*>(check), [](uv_handle_t* handle) {
+      delete reinterpret_cast<uv_check_t*>(handle);
+    });
 
-class proxy_container {
-public:
-  Nan::Persistent<Object> proxy;
-  Nan::Persistent<Object> emitter;
-  Nan::Persistent<Object> target;
+    try {
+      cb();
+    } catch (Error e) {
+      // This is going to crash, but it's not like we really have a choice.
+      e.ThrowAsJavaScriptException();
+    }
+  });
+}
+
+class ObjectInfo : public ObjectWrap<ObjectInfo> {
+ public:
+  ObjectInfo(const CallbackInfo& args) : ObjectWrap(args) {
+    if (!args[0].IsObject())
+      throw Error::New(Env(), "target should be object");
+    if (!args[1].IsFunction())
+      throw Error::New(Env(), "callback should be function");
+    Ref();
+    target_.Reset(args[0].As<Object>(), 0);
+    callback_.Reset(args[1].As<Function>(), 1);
+  }
+
+  void OnFree() {
+    SetImmediate(Env(), [this]() {
+      HandleScope scope(Env());
+      callback_.MakeCallback(Value(), {});
+      callback_.Reset();
+      Reset();
+    });
+  }
+
+  Napi::Value GetTarget(const CallbackInfo&) {
+    return target_.IsEmpty() ? Env().Undefined() : target_.Value();
+  }
+
+  static Function GetClass(Napi::Env env) {
+    return DefineClass(env, "ObjectInfo", {
+      ObjectInfo::InstanceAccessor("target", &ObjectInfo::GetTarget, nullptr),
+    });
+  }
+
+  ObjectReference target_;
+  FunctionReference callback_;
 };
 
+class WeakTag : public ObjectWrap<WeakTag> {
+ public:
+  WeakTag(const CallbackInfo& args) : ObjectWrap(args) {
+    if (args[0].IsObject())
+      info_ = ObjectInfo::Unwrap(args[0].As<Object>());
+    if (info_ == nullptr)
+      throw Error::New(Env(), "First argument needs to be ObjectInfo");
+  }
 
-Nan::Persistent<ObjectTemplate> proxyClass;
+  ~WeakTag() {
+    if (info_ != nullptr)
+      info_->OnFree();
+  }
 
-Nan::Callback *globalCallback;
+  static Function GetClass(Napi::Env env) {
+    return DefineClass(env, "WeakTag", {});
+  }
 
+  ObjectInfo* info_ = nullptr;
+};
 
-bool IsDead(Local<Object> proxy) {
-  assert(proxy->InternalFieldCount() == 1);
-  proxy_container *cont = reinterpret_cast<proxy_container*>(
-    Nan::GetInternalFieldPointer(proxy, 0)
-  );
-  return cont == NULL || cont->target.IsEmpty();
-}
-
-
-Local<Object> Unwrap(Local<Object> proxy) {
-  assert(!IsDead(proxy));
-  proxy_container *cont = reinterpret_cast<proxy_container*>(
-    Nan::GetInternalFieldPointer(proxy, 0)
-  );
-  Local<Object> _target = Nan::New<Object>(cont->target);
-  return _target;
-}
-
-Local<Object> GetEmitter(Local<Object> proxy) {
-  proxy_container *cont = reinterpret_cast<proxy_container*>(
-    Nan::GetInternalFieldPointer(proxy, 0)
-  );
-  assert(cont != NULL);
-  Local<Object> _emitter = Nan::New<Object>(cont->emitter);
-  return _emitter;
-}
-
-
-#define UNWRAP                            \
-  Local<Object> obj;                      \
-  const bool dead = IsDead(info.This());  \
-  if (!dead) obj = Unwrap(info.This());   \
-
-
-NAN_PROPERTY_GETTER(WeakNamedPropertyGetter) {
-  UNWRAP
-  info.GetReturnValue().Set(dead ? Local<Value>() : Nan::Get(obj, property).ToLocalChecked());
-}
-
-
-NAN_PROPERTY_SETTER(WeakNamedPropertySetter) {
-  UNWRAP
-  if (!dead) Nan::Set(obj, property, value);
-  info.GetReturnValue().Set(value);
-}
-
-
-NAN_PROPERTY_QUERY(WeakNamedPropertyQuery) {
-  info.GetReturnValue().Set(None);
-}
-
-
-NAN_PROPERTY_DELETER(WeakNamedPropertyDeleter) {
-  UNWRAP
-  info.GetReturnValue().Set(!dead && Nan::Delete(obj, property).FromJust());
-}
-
-
-NAN_INDEX_GETTER(WeakIndexedPropertyGetter) {
-  UNWRAP
-  info.GetReturnValue().Set(dead ? Local<Value>() : Nan::Get(obj, index).ToLocalChecked());
-}
-
-
-NAN_INDEX_SETTER(WeakIndexedPropertySetter) {
-  UNWRAP
-  if (!dead) Nan::Set(obj, index, value);
-  info.GetReturnValue().Set(value);
-}
-
-
-NAN_INDEX_QUERY(WeakIndexedPropertyQuery) {
-  info.GetReturnValue().Set(None);
-}
-
-
-NAN_INDEX_DELETER(WeakIndexedPropertyDeleter) {
-  UNWRAP
-  info.GetReturnValue().Set(!dead && Nan::Delete(obj, index).FromJust());
-}
-
-
-/**
- * Only one "enumerator" function needs to be defined. This function is used for
- * both the property and indexed enumerator functions.
- */
-
-NAN_PROPERTY_ENUMERATOR(WeakPropertyEnumerator) {
-  UNWRAP
-  info.GetReturnValue().Set(dead ? Nan::New<Array>(0) : Nan::GetPropertyNames(obj).ToLocalChecked());
-}
-
-/**
- * Weakref callback function. Invokes the "global" callback function,
- * which emits the _CB event on the per-object EventEmitter.
- */
-
-static void TargetCallback(const Nan::WeakCallbackInfo<proxy_container> &info) {
-  Nan::HandleScope scope;
-  proxy_container *cont = info.GetParameter();
-
-  // invoke global callback function
-  Local<Value> argv[] = {
-    Nan::New<Object>(cont->emitter)
-  };
-  // Invoke callback directly, not via Nan::Callback->Call() which uses
-  // node::MakeCallback() which calls into process._tickCallback()
-  // too. Those other callbacks are not safe to run from here.
-  v8::Local<v8::Function> globalCallbackDirect = globalCallback->GetFunction();
-  globalCallbackDirect->Call(Nan::GetCurrentContext()->Global(), 1, argv);
-
-  // clean everything up
-  Local<Object> proxy = Nan::New<Object>(cont->proxy);
-  Nan::SetInternalFieldPointer(proxy, 0, NULL);
-  cont->proxy.Reset();
-  cont->emitter.Reset();
-  delete cont;
-}
-
-/**
- * `_create(obj, emitter)` JS function.
- */
-
-NAN_METHOD(Create) {
-  if (!info[0]->IsObject()) return Nan::ThrowTypeError("Object expected");
-
-  proxy_container *cont = new proxy_container();
-
-  Local<Object> _target = info[0].As<Object>();
-  Local<Object> _emitter = info[1].As<Object>();
-  Local<Object> proxy = Nan::New<ObjectTemplate>(proxyClass)->NewInstance();
-  cont->proxy.Reset(proxy);
-  cont->emitter.Reset(_emitter);
-  cont->target.Reset(_target);
-  Nan::SetInternalFieldPointer(proxy, 0, cont);
-
-  cont->target.SetWeak(cont, TargetCallback, Nan::WeakCallbackType::kParameter);
-
-  info.GetReturnValue().Set(proxy);
-}
-
-/**
- * TODO: Make this better.
- */
-
-bool isWeakRef (Local<Value> val) {
-  return val->IsObject() && val.As<Object>()->InternalFieldCount() == 1;
-}
-
-/**
- * `isWeakRef()` JS function.
- */
-
-NAN_METHOD(IsWeakRef) {
-  info.GetReturnValue().Set(isWeakRef(info[0]));
-}
-
-#define WEAKREF_FIRST_ARG                                                      \
-  if (!isWeakRef(info[0])) {                                                   \
-    return Nan::ThrowTypeError("Weakref instance expected");                   \
-  }                                                                            \
-  Local<Object> proxy = info[0].As<Object>();
-
-/**
- * `get(weakref)` JS function.
- */
-
-NAN_METHOD(Get) {
-  WEAKREF_FIRST_ARG
-  if (!IsDead(proxy))
-  info.GetReturnValue().Set(Unwrap(proxy));
-}
-
-/**
- * `isNearDeath(weakref)` JS function.
- */
-
-NAN_METHOD(IsNearDeath) {
-  WEAKREF_FIRST_ARG
-
-  proxy_container *cont = reinterpret_cast<proxy_container*>(
-    Nan::GetInternalFieldPointer(proxy, 0)
-  );
-  assert(cont != NULL);
-
-  Local<Boolean> rtn = Nan::New<Boolean>(cont->target.IsNearDeath());
-
-  info.GetReturnValue().Set(rtn);
-}
-
-/**
- * `isDead(weakref)` JS function.
- */
-
-NAN_METHOD(IsDead) {
-  WEAKREF_FIRST_ARG
-  info.GetReturnValue().Set(IsDead(proxy));
-}
-
-/**
- * `_getEmitter(weakref)` JS function.
- */
-
-NAN_METHOD(GetEmitter) {
-  WEAKREF_FIRST_ARG
-  info.GetReturnValue().Set(GetEmitter(proxy));
-}
-
-/**
- * Sets the global weak callback function.
- */
-
-NAN_METHOD(SetCallback) {
-  Local<Function> callbackHandle = info[0].As<Function>();
-  globalCallback = new Nan::Callback(callbackHandle);
-}
-
-/**
- * Init function.
- */
-
-NAN_MODULE_INIT(Initialize) {
-  Nan::HandleScope scope;
-
-  Local<ObjectTemplate> p = Nan::New<ObjectTemplate>();
-  proxyClass.Reset(p);
-  Nan::SetNamedPropertyHandler(p,
-                               WeakNamedPropertyGetter,
-                               WeakNamedPropertySetter,
-                               WeakNamedPropertyQuery,
-                               WeakNamedPropertyDeleter,
-                               WeakPropertyEnumerator);
-  Nan::SetIndexedPropertyHandler(p,
-                                 WeakIndexedPropertyGetter,
-                                 WeakIndexedPropertySetter,
-                                 WeakIndexedPropertyQuery,
-                                 WeakIndexedPropertyDeleter,
-                                 WeakPropertyEnumerator);
-  p->SetInternalFieldCount(1);
-
-  Nan::SetMethod(target, "get", Get);
-  Nan::SetMethod(target, "isWeakRef", IsWeakRef);
-  Nan::SetMethod(target, "isNearDeath", IsNearDeath);
-  Nan::SetMethod(target, "isDead", IsDead);
-  Nan::SetMethod(target, "_create", Create);
-  Nan::SetMethod(target, "_getEmitter", GetEmitter);
-  Nan::SetMethod(target, "_setCallback", SetCallback);
+Object Init(Env env, Object exports) {
+  exports["WeakTag"] = WeakTag::GetClass(env);
+  exports["ObjectInfo"] = ObjectInfo::GetClass(env);
+  return exports;
 }
 
 } // anonymous namespace
 
-NODE_MODULE(weakref, Initialize)
+NODE_API_MODULE(weakref, Init)
