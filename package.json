@@ -24,13 +24,14 @@
   },
   "main": "lib/weak.js",
   "scripts": {
-    "test": "mocha -gc"
+    "test": "nyc mocha -gc"
   },
   "dependencies": {
     "bindings": "^1.3.0",
     "node-addon-api": "^1.0.0"
   },
   "devDependencies": {
-    "mocha": "^4.0.1"
+    "mocha": "^4.0.1",
+    "nyc": "^11.3.0"
   }
 }
