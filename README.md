@@ -32,8 +32,8 @@ Install with `npm`:
 $ npm install weak-napi
 ```
 
-Differences to node-weak
-------------------------
+Differences from node-weak
+--------------------------
 
 This module exports the full `node-weak` API. The main differences are:
 
@@ -42,8 +42,8 @@ This module exports the full `node-weak` API. The main differences are:
 - GC callbacks are invoked at a suitable time (after the actual GC run has
   finished). **This is nice because it means your process won’t
   potentially crash.**
-- This module works on Node 6+, since it uses a `Proxy` object to give a more
-  complete referral of properties.
+- This module works on Node 6+ only, since it uses a `Proxy` object to give a
+  more complete referral of properties.
 - `isNearDeath()` is not supported (always returns false).
 
 That’s it!
@@ -51,7 +51,7 @@ That’s it!
 Example
 -------
 
-Here's an example of calling a `cleanup()` function on a Object before it gets
+Here's an example of calling a `cleanup()` function on a Object after it gets
 garbage collected:
 
 ``` js
