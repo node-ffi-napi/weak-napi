@@ -1,35 +1,9 @@
 #include <napi.h>
-#include <uv.h>
-#include <assert.h>
-#include <memory>
+#include <setimmediate.h>
 
 using namespace Napi;
 
 namespace {
-
-template<typename T>
-void SetImmediate(Env env, T&& cb) {
-  T* ptr = new T(std::move(cb));
-  uv_check_t* check = new uv_check_t;
-  check->data = static_cast<void*>(ptr);
-  // TODO(addaleax): This should not need to be the default loop!
-  uv_check_init(uv_default_loop(), check);
-  uv_check_start(check, [](uv_check_t* check) {
-    std::unique_ptr<T> ptr (static_cast<T*>(check->data));
-    T cb = std::move(*ptr);
-    uv_check_stop(check);
-    uv_close(reinterpret_cast<uv_handle_t*>(check), [](uv_handle_t* handle) {
-      delete reinterpret_cast<uv_check_t*>(handle);
-    });
-
-    try {
-      cb();
-    } catch (Error e) {
-      // This is going to crash, but it's not like we really have a choice.
-      e.ThrowAsJavaScriptException();
-    }
-  });
-}
 
 class ObjectInfo : public ObjectWrap<ObjectInfo> {
  public:
@@ -45,7 +19,6 @@ class ObjectInfo : public ObjectWrap<ObjectInfo> {
 
   void OnFree() {
     SetImmediate(Env(), [this]() {
-      HandleScope scope(Env());
       callback_.MakeCallback(Value(), {});
       callback_.Reset();
       Reset();
