@@ -2,6 +2,8 @@ weak-napi
 =========
 ### Make weak references to JavaScript Objects.
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/node-ffi-napi/weak-napi.svg)](https://greenkeeper.io/)
+
 [![NPM Version](https://img.shields.io/npm/v/weak-napi.svg?style=flat)](https://npmjs.org/package/weak-napi)
 [![NPM Downloads](https://img.shields.io/npm/dm/weak-napi.svg?style=flat)](https://npmjs.org/package/weak-napi)
 [![Build Status](https://travis-ci.org/node-ffi-napi/weak-napi.svg?style=flat&branch=master)](https://travis-ci.org/node-ffi-napi/weak-napi?branch=master)
