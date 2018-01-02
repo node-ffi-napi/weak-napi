@@ -8,7 +8,7 @@ namespace {
 class ObjectInfo : public ObjectWrap<ObjectInfo> {
  public:
   ObjectInfo(const CallbackInfo& args) : ObjectWrap(args) {
-    if (!args[0].IsObject())
+    if (!args[0].IsObject() && !args[0].IsFunction())
       throw Error::New(Env(), "target should be object");
     if (!args[1].IsFunction())
       throw Error::New(Env(), "callback should be function");

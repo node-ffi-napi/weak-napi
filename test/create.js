@@ -14,10 +14,29 @@ describe('create()', function() {
       null,
       undefined,
       'foo',
+      Symbol(),
     ].forEach((val) => {
       assert.throws(function() {
         weak.create(val);
       });
+    });
+  });
+
+  it('should accept "object" values', function() {
+    [
+      {},
+      function() {},
+      () => {},
+      [],
+      Buffer(''),
+      new ArrayBuffer(10),
+      new Int32Array(new ArrayBuffer(12)),
+      Promise.resolve(),
+      new WeakMap(),
+    ].forEach((val) => {
+      assert.doesNotThrow(() => {
+        assert.ok(weak.create(val));
+      }, Error, String(val));
     });
   });
 });
