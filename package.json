@@ -32,7 +32,7 @@
     "setimmediate-napi": "^1.0.3"
   },
   "devDependencies": {
-    "mocha": "^5.0.0",
+    "mocha": "^6.0.0",
     "nyc": "^11.3.0"
   }
 }
