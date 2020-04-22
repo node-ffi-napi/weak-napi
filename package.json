@@ -24,7 +24,7 @@
   },
   "main": "lib/weak.js",
   "scripts": {
-    "test": "nyc mocha -gc",
+    "test": "nyc mocha --expose-gc",
     "install": "node-gyp-build",
     "prebuild": "prebuildify --napi",
     "prepack": "prebuildify-ci download && ([ $(ls prebuilds | wc -l) = '4' ] || (echo 'Some prebuilds are missing'; exit 1))"
@@ -35,7 +35,7 @@
     "node-gyp-build": "^4.2.1"
   },
   "devDependencies": {
-    "mocha": "^5.0.0",
+    "mocha": "^7.1.1",
     "nyc": "^15.0.0",
     "prebuildify": "^3.0.4",
     "prebuildify-ci": "^1.0.5"
