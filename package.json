@@ -32,7 +32,7 @@
   "dependencies": {
     "node-addon-api": "nodejs/node-addon-api#fedc8195e3a33e32a8a6b4f8b8285cdc6a104a44",
     "setimmediate-napi": "^1.0.3",
-    "node-gyp-build": "^4.2.1"
+    "node-gyp-build": "^4.2.2"
   },
   "devDependencies": {
     "mocha": "^7.1.1",
