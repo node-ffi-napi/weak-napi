@@ -2,6 +2,8 @@
 const assert = require('assert');
 const weak = require('../');
 
+const tick = (n, cb) => n === 0 ? cb() : setImmediate(tick, n-1, cb);
+
 describe('weak()', function() {
   afterEach(gc);
 
@@ -18,7 +20,7 @@ describe('weak()', function() {
       });
       assert(!called);
       gc();
-      setImmediate(() => {
+      tick(3, () => {
         assert(called);
         done();
       });
@@ -36,7 +38,7 @@ describe('weak()', function() {
         called2 = true
       });
       gc();
-      setImmediate(() => {
+      tick(3, () => {
         assert(called1);
         assert(called2);
         done();
@@ -60,7 +62,7 @@ describe('weak()', function() {
         called2 = true
       });
       gc();
-      setImmediate(() => {
+      tick(3, () => {
         assert.strictEqual(weak.get(r1), undefined);
         assert.strictEqual(weak.isDead(r1), true);
         assert(called1);
@@ -84,7 +86,7 @@ describe('weak()', function() {
       assert(!calledGcCallback);
       assert(!calledTickCallback);
       gc();
-      setImmediate(() => {
+      tick(3, () => {
         assert(calledGcCallback);
         assert(calledTickCallback);
         done();

@@ -2,6 +2,8 @@
 const assert = require('assert');
 const weak = require('../');
 
+const tick = (n, cb) => n === 0 ? cb() : setImmediate(tick, n-1, cb);
+
 describe('weak()', function () {
   afterEach(gc);
 
@@ -14,7 +16,7 @@ describe('weak()', function () {
 
       assert(!called);
       gc();
-      setImmediate(() => {
+      tick(3, () => {
         assert(called);
         done();
       });
