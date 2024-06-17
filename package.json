@@ -24,20 +24,20 @@
   },
   "main": "lib/weak.js",
   "scripts": {
-    "test": "nyc mocha --expose-gc",
+    "test": "nyc mocha",
     "install": "node-gyp-build",
     "prebuild": "prebuildify --napi --tag-armv --tag-uv",
     "prepack": "prebuildify-ci download && ([ $(ls prebuilds | wc -l) = '5' ] || (echo 'Some prebuilds are missing'; exit 1))"
   },
   "dependencies": {
-    "node-addon-api": "^3.0.0",
-    "node-gyp-build": "^4.2.1",
-    "setimmediate-napi": "^1.0.3"
+    "node-addon-api": "^8.0.0",
+    "node-gyp-build": "^4.8.1",
+    "setimmediate-napi": "^1.0.6"
   },
   "devDependencies": {
-    "mocha": "^7.1.1",
-    "nyc": "^15.0.0",
-    "prebuildify": "^3.0.4",
+    "mocha": "^10.4.0",
+    "nyc": "^17.0.0",
+    "prebuildify": "^6.0.1",
     "prebuildify-ci": "^1.0.5"
   }
 }

@@ -1,7 +1,7 @@
 sudo: false
 
 env:
-  - CXX=g++-4.9
+  - CXX=g++
   - CXX=clang++
 
 addons:
@@ -9,7 +9,7 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-4.9
+      - g++
 
 language: node_js
 
@@ -20,19 +20,18 @@ os:
 osx_image: xcode10
 
 node_js:
-  - "10"
   - "12"
-  - "14"
+  - "22"
 
 jobs:
   include:
       - os: linux
         arch: arm64
         node_js: 12
-        env: CXX=g++-4.9
+        env: CXX=g++
   exclude:
       - os: osx
-        env: CXX=g++-4.9
+        env: CXX=g++
       - os: linux
         env: CXX=clang++
 
