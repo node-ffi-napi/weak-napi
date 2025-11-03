@@ -21,7 +21,7 @@ class ObjectInfo : public ObjectWrap<ObjectInfo> {
     SetImmediate(Env(), [this]() {
       callback_.MakeCallback(Value(), {});
       callback_.Reset();
-      Reset();
+      Unref();
     });
   }
 

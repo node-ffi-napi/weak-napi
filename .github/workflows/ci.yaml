@@ -1,0 +1,43 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: ['18.x', '20.x', '22.x', '24.x']
+        runner: [ubuntu-22.04, ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.runner }}
+
+    steps:
+      - uses: actions/checkout@v5
+      - name: Use Node.js ${{ matrix['node-version'] }}
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ matrix['node-version'] }}
+
+      - name: Install Clang
+        if: ${{ startsWith(matrix.runner, 'ubuntu-') }}
+        uses: egor-tensin/setup-clang@v1.4
+
+      - name: Install dependencies
+        run: npm install --build-from-source
+
+      - name: Run tests
+        run: npm test
+
+      - name: Run prebuild x64
+        if: ${{ startsWith(matrix.runner, 'ubuntu-') }}
+        shell: bash
+        run: |
+          npm run prebuild --v8_enable_pointer_compression=false \
+                           --v8_enable_31bit_smis_on_64bit_arch=false
+
+      - name: Run prebuild i32
+        if: ${{ startsWith(matrix.runner, 'ubuntu-') }}
+        shell: bash
+        run: |
+          ARCH=ia32 npm run prebuild --v8_enable_pointer_compression=false \
+                                     --v8_enable_31bit_smis_on_64bit_arch=false
